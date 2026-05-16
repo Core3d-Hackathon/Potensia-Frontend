@@ -11,6 +11,8 @@ import {
   Edit3,
   CheckCircle2,
   X,
+  School,
+  FileSignature,
 } from "lucide-react";
 import { StepProps } from "./types";
 import { Jenjang, Fase, CapaianSubject } from "@/app/hooks/useCurriculum";
@@ -27,6 +29,18 @@ interface StudioStep1Props extends StepProps {
   selectedSubject: string;
   setSelectedSubject: (value: string) => void;
   isLoadingCurriculum: boolean;
+
+  // Ikat props baru dari parent untuk kebutuhan Payload API
+  materi: string;
+  setMateri: (value: string) => void;
+  isuLokal: string;
+  setIsuLokal: (value: string) => void;
+  alokasiWaktu: string;
+  setAlokasiWaktu: (value: string) => void;
+  modelPembelajaran: string;
+  setModelPembelajaran: (value: string) => void;
+  satuanPendidikan: string;
+  setSatuanPendidikan: (value: string) => void;
 }
 
 export function StudioStep1(props: StudioStep1Props) {
@@ -52,6 +66,18 @@ export function StudioStep1(props: StudioStep1Props) {
     selectedSubject,
     setSelectedSubject,
     isLoadingCurriculum,
+
+    // Destructure props baru
+    materi,
+    setMateri,
+    isuLokal,
+    setIsuLokal,
+    alokasiWaktu,
+    setAlokasiWaktu,
+    modelPembelajaran,
+    setModelPembelajaran,
+    satuanPendidikan,
+    setSatuanPendidikan,
   } = props;
 
   const quickLabels = [
@@ -72,9 +98,11 @@ export function StudioStep1(props: StudioStep1Props) {
     return "bg-emerald-50 text-emerald-700 border-emerald-100/50";
   };
 
-  // Peningkatan UX: Ditambahkan utilitas status disabled (warna background abu-abu terang, tulisan pudar, dan kursor dilarang)
   const selectClassName =
     "w-full bg-white border border-zinc-200 rounded-xl px-4 py-3.5 text-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none font-medium bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%24%2024%22%20fill%3D%22none%22%20stroke%3D%22%2371717a%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.2em_1.2em] bg-no-repeat bg-[right_1rem_center] transition-all duration-200 disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-100";
+
+  const inputClassName =
+    "w-full bg-white border border-zinc-200 rounded-xl px-4 py-3.5 text-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-medium transition-all duration-200 placeholder:text-zinc-400";
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -91,9 +119,22 @@ export function StudioStep1(props: StudioStep1Props) {
           </p>
         </div>
 
+        {/* INPUT BARU: SATUAN PENDIDIKAN / NAMA SEKOLAH */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+            Nama Satuan Pendidikan (Sekolah)
+          </label>
+          <input
+            type="text"
+            className={inputClassName}
+            placeholder="Contoh: SDN Pesisir 01"
+            value={satuanPendidikan}
+            onChange={(e) => setSatuanPendidikan(e.target.value)}
+          />
+        </div>
+
         {/* BARIS GRID 1: JENJANG & FASE */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Dropdown 1: Jenjang (Selalu Aktif Sebagai Start-Gate) */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-zinc-800">
               Jenjang Pendidikan
@@ -112,7 +153,6 @@ export function StudioStep1(props: StudioStep1Props) {
             </select>
           </div>
 
-          {/* Dropdown 2: Fase / Kelas (Tergantung Jenjang) */}
           <div
             className={`space-y-2 transition-all duration-300 ${!selectedJenjang ? "opacity-60" : ""}`}
           >
@@ -141,7 +181,7 @@ export function StudioStep1(props: StudioStep1Props) {
           </div>
         </div>
 
-        {/* BARIS GRID 2: MATA PELAJARAN (Tergantung Fase) */}
+        {/* BARIS GRID 2: MATA PELAJARAN */}
         <div
           className={`space-y-2 transition-all duration-300 ${!selectedFase ? "opacity-60" : ""}`}
         >
@@ -169,7 +209,7 @@ export function StudioStep1(props: StudioStep1Props) {
           </select>
         </div>
 
-        {/* BARIS GRID 3: ELEMEN CP (Tergantung Mata Pelajaran) */}
+        {/* BARIS GRID 3: ELEMEN CP */}
         <div
           className={`space-y-2 transition-all duration-300 ${!selectedSubject ? "opacity-60" : ""}`}
         >
@@ -196,6 +236,25 @@ export function StudioStep1(props: StudioStep1Props) {
             </p>
           )}
         </div>
+
+        {/* INPUT BARU: TOPIK MATERI UTAMA */}
+        <div
+          className={`space-y-2 transition-all duration-300 ${!selectedSubject ? "opacity-60" : ""}`}
+        >
+          <label
+            className={`text-xs font-bold transition-colors duration-200 ${selectedSubject ? "text-zinc-800" : "text-zinc-400"} flex items-center gap-1.5`}
+          >
+            Topik Materi Utama Pembelajaran
+          </label>
+          <input
+            type="text"
+            className={inputClassName}
+            placeholder="Contoh: Ekosistem Pesisir"
+            value={materi}
+            onChange={(e) => setMateri(e.target.value)}
+            disabled={!selectedSubject}
+          />
+        </div>
       </div>
 
       <hr className="border-zinc-100" />
@@ -215,7 +274,9 @@ export function StudioStep1(props: StudioStep1Props) {
         <textarea
           rows={3}
           className="w-full bg-white border border-zinc-200 rounded-xl p-4 text-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none transition-shadow"
-          placeholder="Contoh: Sekolah kami berada di daerah pesisir, mayoritas orang tua siswa adalah nelayan..."
+          placeholder="Contoh: Abrasi di Pantai Padang, mayoritas orang tua siswa adalah nelayan pukat..."
+          value={isuLokal}
+          onChange={(e) => setIsuLokal(e.target.value)}
         ></textarea>
         <div className="space-y-3">
           <label className="text-xs font-bold text-zinc-600">
@@ -234,6 +295,7 @@ export function StudioStep1(props: StudioStep1Props) {
               >
                 {tag}
                 <button
+                  type="button"
                   onClick={() => handleRemoveTag(tag)}
                   className="opacity-60 hover:opacity-100 focus:outline-none transition-opacity"
                 >
@@ -245,6 +307,7 @@ export function StudioStep1(props: StudioStep1Props) {
           <div className="flex flex-wrap gap-2 pt-2">
             {quickLabels.map((label) => (
               <button
+                type="button"
                 key={label}
                 onClick={() => handleAddTag(label)}
                 disabled={activeTags.includes(label)}
@@ -291,6 +354,7 @@ export function StudioStep1(props: StudioStep1Props) {
                   {item.label}
                 </span>
                 <button
+                  type="button"
                   onClick={() =>
                     toggleFacility(item.id as keyof typeof facilities)
                   }
@@ -399,18 +463,34 @@ export function StudioStep1(props: StudioStep1Props) {
             <label className="text-xs font-bold text-zinc-800">
               Model Pembelajaran
             </label>
-            <select className={selectClassName}>
+            <select
+              className={selectClassName}
+              value={modelPembelajaran}
+              onChange={(e) => setModelPembelajaran(e.target.value)}
+            >
               <option value="">Pilih jenis model pembelajaran...</option>
-              <option value="pbl">Project Based Learning</option>
+              <option value="Project Based Learning">
+                Project Based Learning
+              </option>
+              <option value="Problem Based Learning">
+                Problem Based Learning
+              </option>
+              <option value="Discovery Learning">Discovery Learning</option>
             </select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-zinc-800">
               Alokasi Waktu
             </label>
-            <select className={selectClassName}>
+            <select
+              className={selectClassName}
+              value={alokasiWaktu}
+              onChange={(e) => setAlokasiWaktu(e.target.value)}
+            >
               <option value="">Pilih alokasi waktu...</option>
-              <option value="2jp">2 JP (Jam Pelajaran)</option>
+              <option value="2 JP">2 JP (Jam Pelajaran)</option>
+              <option value="4 JP">4 JP (Jam Pelajaran)</option>
+              <option value="6 JP">6 JP (Jam Pelajaran)</option>
             </select>
           </div>
         </div>

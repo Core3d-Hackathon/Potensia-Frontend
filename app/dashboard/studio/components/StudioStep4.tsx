@@ -73,7 +73,7 @@ export function StudioStep4(props: StudioStep4Props) {
 
     if (result.success) {
       alert(result.message);
-      router.push("/dashboard/arsip");
+      router.push("/dashboard/archive");
     } else {
       alert(result.message);
     }

@@ -21,7 +21,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     <aside className="w-64 h-screen bg-white border-r border-zinc-100 flex flex-col shrink-0">
       {/* Brand & Logo */}
       <div className="p-6 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
           <Image
             src="/images/Logo potensia2 .png"
             alt="Logo Potensia"
@@ -34,7 +34,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             <span className="text-[1.1rem] font-bold text-[#00a870] leading-none">Potensia</span>
             <span className="text-[0.65rem] text-slate-500 mt-1">AI untuk Pendidik</span>
           </div>
-        </div>
+        </Link>
         
         {/* Mobile Close Button */}
         <button 
@@ -47,10 +47,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Main Action Button */}
       <div className="px-6 mb-6">
-        <button className="w-full flex items-center justify-center gap-2 bg-[#00a870] hover:bg-[#009260] transition-colors text-white text-sm font-medium py-2.5 rounded-lg">
+        <Link href="/dashboard/studio" className="w-full flex items-center justify-center gap-2 bg-[#00a870] hover:bg-[#009260] transition-colors text-white text-sm font-medium py-2.5 rounded-lg">
           <Plus className="w-4 h-4" />
           Buat RPP Baru
-        </button>
+        </Link>
       </div>
 
       {/* Navigation Menu */}

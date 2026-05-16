@@ -5,7 +5,7 @@ import { Mail, MapPin, School, BookOpen, Medal, Star, Zap, ShieldCheck, Award, F
 export default function ProfilePage() {
   return (
     <div className="max-w-[1100px] mx-auto pb-16 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* 1. Header & Banner */}
       <div className="bg-white rounded-[2rem] border border-zinc-200/60 shadow-sm overflow-hidden">
         {/* Banner */}
@@ -19,19 +19,19 @@ export default function ProfilePage() {
         {/* Profile Info Overlay */}
         <div className="px-8 pb-8 relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            
+
             {/* Avatar & Basic Info */}
             <div className="flex flex-col md:flex-row gap-6 md:gap-8 -mt-16 md:-mt-20 relative z-10">
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white shrink-0 relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250&h=250" 
-                  alt="Profile Picture" 
+                <img
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250&h=250"
+                  alt="Profile Picture"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="pt-2 md:pt-24 space-y-2">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl md:text-3xl font-black text-zinc-900 tracking-tight">Anita Setiawan</h1>
+                  <h1 className="text-2xl md:text-3xl font-black text-zinc-900 tracking-tight">Pak oji</h1>
                   <span className="bg-[#e8faf4] text-[#00a870] p-1 rounded-full" title="Terverifikasi">
                     <CheckCircle2 className="w-5 h-5" />
                   </span>
@@ -59,10 +59,10 @@ export default function ProfilePage() {
 
       {/* 2. Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Bio & Stats */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Bio Box */}
           <div className="bg-white rounded-[2rem] border border-zinc-200/60 shadow-sm p-8">
             <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
@@ -108,11 +108,11 @@ export default function ProfilePage() {
 
         {/* Right Column: Gamification & Badges */}
         <div className="lg:col-span-1 space-y-8">
-          
+
           {/* Level Progress */}
           <div className="bg-gradient-to-b from-white to-[#f8fdfb] rounded-[2rem] border border-[#d1f4e6] shadow-sm p-8 relative overflow-hidden">
             <div className="absolute -right-6 -top-6 w-32 h-32 bg-[#e8faf4] rounded-full blur-2xl"></div>
-            
+
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function ProfilePage() {
                   <p className="text-[0.65rem] text-zinc-500 leading-relaxed">Menciptakan 10 Modul Ajar pertama menggunakan Studio AI.</p>
                 </div>
               </div>
-              
+
               {/* Badge 2 */}
               <div className="flex gap-4 p-4 rounded-xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-[#a7f3d0] hover:shadow-sm transition-all group">
                 <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 border-2 border-blue-200 group-hover:scale-110 transition-transform">

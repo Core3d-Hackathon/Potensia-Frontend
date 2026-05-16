@@ -1,11 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, Leaf, X, BookOpen, Building, FileText, Eye, Ear, Activity, Edit3, CheckCircle2, FileCheck, Lightbulb, GripVertical, Pencil, Trash2, Plus, FileBadge, MousePointerClick, ClipboardList, Target, ListTodo, CheckSquare, HelpCircle, SlidersHorizontal, Paperclip, File, FolderArchive } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import confetti from "canvas-confetti";
 
 export default function StudioAIPage() {
   const [step, setStep] = useState(1);
   const [shareCommunity, setShareCommunity] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleNextStep = () => {
+    setIsGenerating(true);
+    // Waktu simulasi AI berpikir (makin jauh step makin lama)
+    const generateTime = step === 1 ? 2500 : step === 2 ? 3000 : 3500;
+    setTimeout(() => {
+      setIsGenerating(false);
+      setStep(prev => prev + 1);
+    }, generateTime);
+  };
+
+  const handleSave = () => {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval: any = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults, particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults, particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+
+    setTimeout(() => {
+      alert("🎉 Modul Ajar berhasil disimpan ke Arsip! " + (shareCommunity ? "\nBerhasil dibagikan ke komunitas! +50 XP" : ""));
+    }, 600);
+  };
 
   // --- State Step 1 ---
   const [activeTags, setActiveTags] = useState<string[]>(["Pohon Kelapa", "Perahu Nelayan", "Terumbu Karang"]);
@@ -36,6 +79,83 @@ export default function StudioAIPage() {
     { id: 2, cognitive: "PSIKOMOTOR: OBSERVASI", context: "KONTEKS: PESISIR", text: "Mendemonstrasikan cara menjaga kebersihan lingkungan pantai dari sampah plastik sebagai upaya pelestarian ekosistem laut lokal secara berkelanjutan." },
     { id: 3, cognitive: "KOGNITIF: IDENTIFIKASI", context: "KONTEKS: FLORA & FAUNA", text: "Mengidentifikasi jenis-jenis vegetasi mangrove di lingkungan sekitar dan mengaitkannya dengan peran mereka sebagai pelindung alami dari abrasi pantai." }
   ];
+
+  // --- State Step 3 (ATP DnD) ---
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const [bankTP, setBankTP] = useState([
+    { id: 'tp-3', title: 'TP.3', text: 'Merancang model jaring-jaring makanan sederhana.' },
+    { id: 'tp-4', title: 'TP.4', text: 'Menjelaskan dampak pencemaran air terhadap ekosistem sungai.' },
+    { id: 'tp-5', title: 'TP.5', text: 'Melakukan observasi lapangan di taman sekolah.' }
+  ]);
+  
+  const [meetings, setMeetings] = useState([
+    { 
+      id: 'meeting-1', 
+      title: 'Pertemuan 1', 
+      duration: '2 JP',
+      items: [{ id: 'tp-1', title: 'TP.1', text: 'Siswa mampu mengidentifikasi komponen ekosistem di lingkungan sekitar.' }]
+    },
+    { 
+      id: 'meeting-2', 
+      title: 'Pertemuan 2', 
+      duration: '2 JP',
+      items: [{ id: 'tp-2', title: 'TP.2', text: 'Siswa menganalisis hubungan timbal balik antara makhluk hidup dan lingkungan.' }]
+    }
+  ]);
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    // Moving within the same list
+    if (source.droppableId === destination.droppableId) {
+      if (source.droppableId === 'bank') {
+        const newBank = Array.from(bankTP);
+        const [removed] = newBank.splice(source.index, 1);
+        newBank.splice(destination.index, 0, removed);
+        setBankTP(newBank);
+      } else {
+        const meetingIndex = meetings.findIndex(m => m.id === source.droppableId);
+        const newMeetings = [...meetings];
+        const newItems = Array.from(newMeetings[meetingIndex].items);
+        const [removed] = newItems.splice(source.index, 1);
+        newItems.splice(destination.index, 0, removed);
+        newMeetings[meetingIndex] = { ...newMeetings[meetingIndex], items: newItems };
+        setMeetings(newMeetings);
+      }
+      return;
+    }
+
+    // Moving between lists
+    let sourceItem;
+    const newBank = Array.from(bankTP);
+    const newMeetings = [...meetings];
+
+    // Remove from source
+    if (source.droppableId === 'bank') {
+      [sourceItem] = newBank.splice(source.index, 1);
+    } else {
+      const sourceMeetingIndex = newMeetings.findIndex(m => m.id === source.droppableId);
+      const sourceItems = Array.from(newMeetings[sourceMeetingIndex].items);
+      [sourceItem] = sourceItems.splice(source.index, 1);
+      newMeetings[sourceMeetingIndex] = { ...newMeetings[sourceMeetingIndex], items: sourceItems };
+    }
+
+    // Add to destination
+    if (destination.droppableId === 'bank') {
+      newBank.splice(destination.index, 0, sourceItem);
+    } else {
+      const destMeetingIndex = newMeetings.findIndex(m => m.id === destination.droppableId);
+      const destItems = Array.from(newMeetings[destMeetingIndex].items);
+      destItems.splice(destination.index, 0, sourceItem);
+      newMeetings[destMeetingIndex] = { ...newMeetings[destMeetingIndex], items: destItems };
+    }
+
+    setBankTP(newBank);
+    setMeetings(newMeetings);
+  };
 
   return (
     <div className="max-w-[1100px] mx-auto pb-16">
@@ -78,7 +198,60 @@ export default function StudioAIPage() {
           </div>
         </div>
 
-        <div className="p-8 sm:p-12 flex-1 flex flex-col">
+        <div className="p-8 sm:p-12 flex-1 flex flex-col relative min-h-[500px]">
+          
+          {isGenerating && (
+            <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-teal-400 blur-[40px] opacity-30 rounded-full animate-pulse"></div>
+                <div className="w-24 h-24 bg-gradient-to-br from-[#00a870] to-teal-400 rounded-3xl flex items-center justify-center shadow-2xl shadow-teal-500/40 relative z-10 animate-bounce" style={{ animationDuration: '2s' }}>
+                  <Sparkles className="w-12 h-12 text-white animate-pulse" />
+                </div>
+              </div>
+              
+              <div className="space-y-4 text-center max-w-lg mb-12">
+                <h3 className="text-2xl font-black text-zinc-900 flex items-center justify-center gap-2">
+                  AI Sedang Bekerja <span className="flex gap-1"><span className="animate-bounce" style={{animationDelay: '0ms'}}>.</span><span className="animate-bounce" style={{animationDelay: '150ms'}}>.</span><span className="animate-bounce" style={{animationDelay: '300ms'}}>.</span></span>
+                </h3>
+                <p className="text-base text-zinc-500 font-medium h-12">
+                  {step === 1 && "Menganalisis profil siswa dan merancang Tujuan Pembelajaran..."}
+                  {step === 2 && "Menyusun Alur Tujuan Pembelajaran (ATP) yang logis dan terstruktur..."}
+                  {step === 3 && "Memfinalisasi Modul Ajar lengkap dengan langkah dan asesmen..."}
+                </p>
+              </div>
+
+              {/* Shimmer / Skeleton UI */}
+              <div className="w-full max-w-3xl bg-white border-2 border-teal-50 rounded-2xl p-8 shadow-[0_0_50px_-12px_rgba(20,184,166,0.15)] relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-teal-100/40 to-transparent animate-[shimmer_1.5s_infinite]" style={{ backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }}></div>
+                <style>{`
+                  @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                  }
+                `}</style>
+                
+                <div className="space-y-6 relative z-10 opacity-70">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-100 animate-pulse"></div>
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 bg-zinc-100 rounded-md w-1/3 animate-pulse"></div>
+                      <div className="h-3 bg-zinc-100 rounded-md w-1/4 animate-pulse" style={{ animationDelay: '100ms' }}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-3 bg-zinc-100 rounded-md w-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                    <div className="h-3 bg-zinc-100 rounded-md w-11/12 animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                    <div className="h-3 bg-zinc-100 rounded-md w-4/5 animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 pt-4">
+                    <div className="h-24 bg-zinc-100 rounded-xl animate-pulse" style={{ animationDelay: '500ms' }}></div>
+                    <div className="h-24 bg-zinc-100 rounded-xl animate-pulse" style={{ animationDelay: '600ms' }}></div>
+                    <div className="h-24 bg-zinc-100 rounded-xl animate-pulse" style={{ animationDelay: '700ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* ===================== STEP 1 CONTENT ===================== */}
           {step === 1 && (
@@ -294,166 +467,149 @@ export default function StudioAIPage() {
               </div>
 
               {/* Grid 2 Columns: Meetings vs TP Bank */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-                
-                {/* Left Column: Meetings */}
-                <div className="xl:col-span-2 space-y-6">
+              {isMounted && (
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
                   
-                  {/* Meeting Card 1 */}
-                  <div className="bg-white border border-zinc-200 rounded-2xl flex flex-col overflow-hidden shadow-sm group">
-                    <div className="p-5 border-l-4 border-l-[#00a870] pl-4 sm:pl-6 space-y-4">
-                      {/* Meeting Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <GripVertical className="w-5 h-5 text-zinc-300 cursor-grab" />
-                          <h3 className="text-lg font-bold text-zinc-900">Pertemuan 1</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="bg-zinc-100 border border-zinc-200 rounded-lg flex items-center overflow-hidden">
-                            <select className="bg-transparent text-xs font-bold text-zinc-700 py-1.5 pl-3 pr-2 focus:outline-none appearance-none cursor-pointer">
-                              <option>2 JP</option>
-                              <option>4 JP</option>
-                            </select>
-                            <div className="pr-2 pointer-events-none text-zinc-500 text-[10px]">▼</div>
+                  {/* Left Column: Meetings */}
+                  <div className="xl:col-span-2 space-y-6">
+                    {meetings.map((meeting) => (
+                      <div key={meeting.id} className="bg-white border border-zinc-200 rounded-2xl flex flex-col overflow-hidden shadow-sm group">
+                        <div className="p-5 border-l-4 border-l-[#00a870] pl-4 sm:pl-6 space-y-4">
+                          {/* Meeting Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <GripVertical className="w-5 h-5 text-zinc-300 cursor-grab" />
+                              <h3 className="text-lg font-bold text-zinc-900">{meeting.title}</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="bg-zinc-100 border border-zinc-200 rounded-lg flex items-center overflow-hidden">
+                                <select className="bg-transparent text-xs font-bold text-zinc-700 py-1.5 pl-3 pr-2 focus:outline-none appearance-none cursor-pointer" defaultValue={meeting.duration}>
+                                  <option>2 JP</option>
+                                  <option>4 JP</option>
+                                </select>
+                                <div className="pr-2 pointer-events-none text-zinc-500 text-[10px]">▼</div>
+                              </div>
+                              <button className="p-1.5 text-zinc-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          <button className="p-1.5 text-zinc-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          <Droppable droppableId={meeting.id}>
+                            {(provided, snapshot) => (
+                              <div 
+                                {...provided.droppableProps} 
+                                ref={provided.innerRef}
+                                className={`min-h-[100px] space-y-3 rounded-xl p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-teal-50/50' : ''}`}
+                              >
+                                {meeting.items.map((item, index) => (
+                                  <Draggable key={item.id} draggableId={item.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`flex items-start gap-3 bg-white p-3 rounded-xl border transition-shadow ${snapshot.isDragging ? 'shadow-lg border-[#00a870] z-50' : 'border-zinc-100 hover:border-zinc-200 shadow-sm'}`}
+                                      >
+                                        <div className="w-8 h-8 rounded-full bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0 border border-[#a7f3d0]">
+                                          {item.title}
+                                        </div>
+                                        <p className="text-sm text-zinc-700 font-medium leading-relaxed pt-1.5">
+                                          {item.text}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                                {meeting.items.length === 0 && (
+                                  <div className="border-2 border-dashed border-zinc-200 bg-zinc-50/50 rounded-xl py-6 flex items-center justify-center text-xs font-bold text-zinc-400">
+                                    Drop Tujuan Pembelajaran di sini
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Droppable>
                         </div>
                       </div>
+                    ))}
 
-                      {/* TP Item Inside Meeting */}
-                      <div className="pl-8 flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0 border border-[#a7f3d0]">
-                          TP.1
-                        </div>
-                        <p className="text-sm text-zinc-700 font-medium leading-relaxed pt-1.5">
-                          Siswa mampu mengidentifikasi komponen ekosistem di lingkungan sekitar.
-                        </p>
-                      </div>
-
-                      {/* Dropzone */}
-                      <div className="ml-8 border-2 border-dashed border-zinc-200 bg-zinc-50/50 rounded-xl py-4 flex items-center justify-center text-xs font-bold text-zinc-400">
-                        Drop Tujuan Pembelajaran di sini
-                      </div>
-                    </div>
+                    {/* Add Meeting Button */}
+                    <button className="w-full border-2 border-dashed border-[#a7f3d0] bg-[#f8fdfb] hover:bg-[#d1f4e6]/30 text-[#00a870] rounded-xl p-4 flex items-center justify-center gap-2 font-bold text-sm transition-colors">
+                      <Plus className="w-4 h-4" /> Tambah Pertemuan Baru
+                    </button>
+                    
                   </div>
 
-                  {/* Meeting Card 2 */}
-                  <div className="bg-white border border-zinc-200 rounded-2xl flex flex-col overflow-hidden shadow-sm group">
-                    <div className="p-5 border-l-4 border-l-[#00a870] pl-4 sm:pl-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <GripVertical className="w-5 h-5 text-zinc-300 cursor-grab" />
-                          <h3 className="text-lg font-bold text-zinc-900">Pertemuan 2</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="bg-zinc-100 border border-zinc-200 rounded-lg flex items-center overflow-hidden">
-                            <select className="bg-transparent text-xs font-bold text-zinc-700 py-1.5 pl-3 pr-2 focus:outline-none appearance-none cursor-pointer">
-                              <option>2 JP</option>
-                              <option>4 JP</option>
-                            </select>
-                            <div className="pr-2 pointer-events-none text-zinc-500 text-[10px]">▼</div>
-                          </div>
-                          <button className="p-1.5 text-zinc-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="pl-8 flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0 border border-[#a7f3d0]">
-                          TP.2
-                        </div>
-                        <p className="text-sm text-zinc-700 font-medium leading-relaxed pt-1.5">
-                          Siswa menganalisis hubungan timbal balik antara makhluk hidup dan lingkungan.
-                        </p>
-                      </div>
-
-                      <div className="ml-8 border-2 border-dashed border-zinc-200 bg-zinc-50/50 rounded-xl py-4 flex items-center justify-center text-xs font-bold text-zinc-400">
-                        Drop Tujuan Pembelajaran di sini
-                      </div>
+                  {/* Right Column: Bank TP Sidebar */}
+                  <div className="xl:col-span-1 bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm sticky top-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-zinc-900">Bank TP</h3>
+                      <span className="bg-[#eff6ff] text-blue-700 text-[0.6rem] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                        {bankTP.length} Belum Terpakai
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Add Meeting Button */}
-                  <button className="w-full border-2 border-dashed border-[#a7f3d0] bg-[#f8fdfb] hover:bg-[#d1f4e6]/30 text-[#00a870] rounded-xl p-4 flex items-center justify-center gap-2 font-bold text-sm transition-colors">
-                    <Plus className="w-4 h-4" /> Tambah Pertemuan Baru
-                  </button>
-                  
-                </div>
-
-                {/* Right Column: Bank TP Sidebar */}
-                <div className="xl:col-span-1 bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm sticky top-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-zinc-900">Bank TP</h3>
-                    <span className="bg-[#eff6ff] text-blue-700 text-[0.6rem] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                      4 Belum Terpakai
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
-                    Tarik Tujuan Pembelajaran ke dalam pertemuan untuk menyusun ATP.
-                  </p>
-
-                  {/* Unused TP List */}
-                  <div className="space-y-3 mb-6">
-                    {/* TP 3 */}
-                    <div className="bg-[#e8faf4]/50 border border-[#a7f3d0] rounded-xl p-4 hover:border-[#00a870] transition-colors cursor-grab active:cursor-grabbing group">
-                      <div className="flex gap-3 items-start">
-                        <div className="w-7 h-7 rounded-md bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0">
-                          TP.3
-                        </div>
-                        <p className="text-sm text-zinc-800 font-bold leading-snug">
-                          Merancang model jaring-jaring makanan sederhana.
-                        </p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-1.5 text-[#00a870] text-[0.65rem] font-bold uppercase tracking-wider pl-10 opacity-70 group-hover:opacity-100 transition-opacity">
-                        <MousePointerClick className="w-3.5 h-3.5" /> Klik & Tarik
-                      </div>
-                    </div>
-
-                    {/* TP 4 */}
-                    <div className="bg-[#e8faf4]/50 border border-[#a7f3d0] rounded-xl p-4 hover:border-[#00a870] transition-colors cursor-grab active:cursor-grabbing group">
-                      <div className="flex gap-3 items-start">
-                        <div className="w-7 h-7 rounded-md bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0">
-                          TP.4
-                        </div>
-                        <p className="text-sm text-zinc-800 font-bold leading-snug">
-                          Menjelaskan dampak pencemaran air terhadap ekosistem sungai.
-                        </p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-1.5 text-[#00a870] text-[0.65rem] font-bold uppercase tracking-wider pl-10 opacity-70 group-hover:opacity-100 transition-opacity">
-                        <MousePointerClick className="w-3.5 h-3.5" /> Klik & Tarik
-                      </div>
-                    </div>
-
-                    {/* TP 5 */}
-                    <div className="bg-[#e8faf4]/50 border border-[#a7f3d0] rounded-xl p-4 hover:border-[#00a870] transition-colors cursor-grab active:cursor-grabbing group">
-                      <div className="flex gap-3 items-start">
-                        <div className="w-7 h-7 rounded-md bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0">
-                          TP.5
-                        </div>
-                        <p className="text-sm text-zinc-800 font-bold leading-snug">
-                          Melakukan observasi lapangan di taman sekolah.
-                        </p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-1.5 text-[#00a870] text-[0.65rem] font-bold uppercase tracking-wider pl-10 opacity-70 group-hover:opacity-100 transition-opacity">
-                        <MousePointerClick className="w-3.5 h-3.5" /> Klik & Tarik
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tips Box */}
-                  <div className="bg-[#eff6ff] rounded-xl p-4 flex gap-3 border border-blue-100">
-                    <Lightbulb className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <p className="text-[0.65rem] font-bold text-blue-800 leading-relaxed">
-                      Tips Guru: Urutkan materi dari yang paling konkrit menuju abstrak untuk pemahaman lebih baik.
+                    <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+                      Tarik Tujuan Pembelajaran ke dalam pertemuan untuk menyusun ATP.
                     </p>
+
+                    {/* Unused TP List */}
+                    <Droppable droppableId="bank">
+                      {(provided, snapshot) => (
+                        <div 
+                          {...provided.droppableProps} 
+                          ref={provided.innerRef}
+                          className={`space-y-3 min-h-[200px] rounded-xl p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-zinc-50' : ''}`}
+                        >
+                          {bankTP.map((tp, index) => (
+                            <Draggable key={tp.id} draggableId={tp.id} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`bg-[#e8faf4]/50 border rounded-xl p-4 transition-all group ${snapshot.isDragging ? 'shadow-lg border-[#00a870] z-50 rotate-2' : 'border-[#a7f3d0] hover:border-[#00a870]'}`}
+                                >
+                                  <div className="flex gap-3 items-start">
+                                    <div className="w-7 h-7 rounded-md bg-[#d1f4e6] text-[#00a870] text-[10px] font-black flex items-center justify-center shrink-0">
+                                      {tp.title}
+                                    </div>
+                                    <p className="text-sm text-zinc-800 font-bold leading-snug">
+                                      {tp.text}
+                                    </p>
+                                  </div>
+                                  <div className="mt-3 flex items-center gap-1.5 text-[#00a870] text-[0.65rem] font-bold uppercase tracking-wider pl-10 opacity-70 group-hover:opacity-100 transition-opacity">
+                                    <MousePointerClick className="w-3.5 h-3.5" /> Klik & Tarik
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                          {bankTP.length === 0 && (
+                            <div className="border-2 border-dashed border-zinc-200 bg-zinc-50 rounded-xl py-8 flex flex-col items-center justify-center text-center gap-2 text-zinc-400">
+                              <CheckCircle2 className="w-6 h-6" />
+                              <span className="text-xs font-bold">Semua TP Terpakai</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Droppable>
+
+                    {/* Tips Box */}
+                    <div className="bg-[#eff6ff] rounded-xl p-4 flex gap-3 border border-blue-100 mt-6">
+                      <Lightbulb className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <p className="text-[0.65rem] font-bold text-blue-800 leading-relaxed">
+                        Tips Guru: Urutkan materi dari yang paling konkrit menuju abstrak untuk pemahaman lebih baik.
+                      </p>
+                    </div>
+
                   </div>
 
                 </div>
-
-              </div>
+              </DragDropContext>
+              )}
             </div>
           )}
 
@@ -609,7 +765,10 @@ export default function StudioAIPage() {
                   </div>
 
                   {/* Final Action */}
-                  <button className="w-full bg-[#00a870] hover:bg-[#009260] text-white rounded-2xl p-4 flex items-center justify-center gap-3 font-bold text-base transition-all active:scale-[0.98] shadow-lg shadow-teal-500/30">
+                  <button 
+                    onClick={handleSave}
+                    className="w-full bg-[#00a870] hover:bg-[#009260] text-white rounded-2xl p-4 flex items-center justify-center gap-3 font-bold text-base transition-all active:scale-[0.98] shadow-lg shadow-teal-500/30"
+                  >
                     <FolderArchive className="w-5 h-5" /> Simpan ke Arsip
                   </button>
 
@@ -624,7 +783,8 @@ export default function StudioAIPage() {
             {step > 1 ? (
               <button 
                 onClick={() => setStep(step - 1)}
-                className="bg-[#e8faf4] hover:bg-[#d1f4e6] text-[#00a870] px-8 py-3.5 rounded-xl font-bold transition-all text-sm tracking-wide"
+                disabled={isGenerating}
+                className="bg-[#e8faf4] hover:bg-[#d1f4e6] text-[#00a870] px-8 py-3.5 rounded-xl font-bold transition-all text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Sebelumnya
               </button>
@@ -634,10 +794,18 @@ export default function StudioAIPage() {
             
             {step < 4 && (
               <button 
-                onClick={() => setStep(step + 1)}
-                className="bg-[#00a870] hover:bg-[#009260] text-white px-12 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-teal-500/20 text-sm tracking-wide"
+                onClick={handleNextStep}
+                disabled={isGenerating}
+                className="bg-[#00a870] hover:bg-[#009260] text-white px-12 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-teal-500/20 text-sm tracking-wide disabled:opacity-80 disabled:cursor-wait"
               >
-                Lanjut
+                {isGenerating ? (
+                  <>
+                    <Sparkles className="w-4 h-4 animate-spin-slow" />
+                    Memproses...
+                  </>
+                ) : (
+                  "Lanjut"
+                )}
               </button>
             )}
           </div>

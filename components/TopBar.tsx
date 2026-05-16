@@ -40,7 +40,7 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
             {/* Dropdown Menu */}
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-zinc-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-right group-hover:translate-y-0 translate-y-2">
               <div className="p-1.5 flex flex-col gap-0.5">
-                <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-colors font-medium">
+                <Link href="/dashboard/profile" className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-colors font-medium">
                   <User className="w-4 h-4" />
                   Profile Saya
                 </Link>

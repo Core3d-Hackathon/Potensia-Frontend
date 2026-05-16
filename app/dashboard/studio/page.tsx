@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation"; // 🌟 FIX: Pastikan ini terimport sempurna
+import { useAuth } from "@clerk/nextjs";
 import { StudioHeader } from "./components/StudioHeader";
 import { StudioStepper } from "./components/StudioStepper";
 import { StudioStep1 } from "./components/StudioStep1";
@@ -9,57 +11,32 @@ import { StudioStep3 } from "./components/StudioStep3";
 import { StudioStep4 } from "./components/StudioStep4";
 import { StudioFooter } from "./components/StudioFooter";
 
-// Import Custom Hook Kurikulum Nasional kita
+// Import Custom Hook Kurikulum Nasional & Generator AI
 import { useCurriculum } from "@/app/hooks/useCurriculum";
-import confetti from "canvas-confetti";
-import { DropResult } from "@hello-pangea/dnd";
+import { useModuleGenerator } from "@/app/hooks/useModuleGenerator";
 
 export default function StudioAIPage() {
   const [step, setStep] = useState(1);
   const [shareCommunity, setShareCommunity] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleNextStep = () => {
-    setIsGenerating(true);
-    // Waktu simulasi AI berpikir (makin jauh step makin lama)
-    const generateTime = step === 1 ? 2500 : step === 2 ? 3000 : 3500;
-    setTimeout(() => {
-      setIsGenerating(false);
-      setStep(prev => prev + 1);
-    }, generateTime);
-  };
+  // State & Hooks untuk Save Database
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter(); // 🌟 Menghubungkan router Next.js
+  const { getToken } = useAuth();
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-  const handleSave = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+  // 1. Konsumsi Hook Generator AI
+  const {
+    isGenerating,
+    generateTP,
+    generateATP,
+    generateFullModul,
+    generatedTP,
+    generatedATP,
+    generatedModul,
+  } = useModuleGenerator();
 
-    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-    const interval: any = setInterval(function () {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({
-        ...defaults, particleCount,
-        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-      });
-      confetti({
-        ...defaults, particleCount,
-        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-      });
-    }, 250);
-
-    setTimeout(() => {
-      alert("🎉 Modul Ajar berhasil disimpan ke Arsip! " + (shareCommunity ? "\nBerhasil dibagikan ke komunitas! +50 XP" : ""));
-    }, 600);
-  };
-
-  // Konsumsi hook Kurikulum di level parent utama
+  // 2. Konsumsi hook Kurikulum
   const {
     jenjangList,
     faseList,
@@ -74,28 +51,26 @@ export default function StudioAIPage() {
     isLoadingCurriculum,
   } = useCurriculum();
 
-  // State untuk konfigurasi parameter Guru
-  const [activeTags, setActiveTags] = useState<string[]>([
-    "Pohon Kelapa",
-    "Perahu Nelayan",
-    "Terumbu Karang",
-  ]);
+  // 3. State lokal input form
+  const [satuanPendidikan, setSatuanPendidikan] = useState("");
+  const [materi, setMateri] = useState("");
+  const [isuLokal, setIsuLokal] = useState("");
+  const [alokasiWaktu, setAlokasiWaktu] = useState("");
+  const [modelPembelajaran, setModelPembelajaran] = useState("");
+  const [jumlahPertemuan, setJumlahPertemuan] = useState(1);
+
+  // 4. State parameter pendukung
+  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [facilities, setFacilities] = useState({
     internet: false,
-    projector: true,
-    lab: true,
-    electricity: true,
+    projector: false,
+    lab: false,
+    electricity: false,
   });
-  const [learningStyles, setLearningStyles] = useState<string[]>([
-    "visual",
-    "auditori",
-  ]);
-  const [assessments, setAssessments] = useState<string[]>([
-    "praktik",
-    "tertulis",
-  ]);
+  const [learningStyles, setLearningStyles] = useState<string[]>([]);
+  const [assessments, setAssessments] = useState<string[]>([]);
 
-  // Handlers parameter
+  // Handlers parameter tags & kearifan lokal
   const handleAddTag = (label: string) => {
     if (!activeTags.includes(label)) setActiveTags([...activeTags, label]);
   };
@@ -120,86 +95,108 @@ export default function StudioAIPage() {
     );
   };
 
-  // Navigasi halaman wizard
-  const handleNext = () => setStep(step + 1);
-  const handlePrev = () => setStep(step - 1);
-
-  // --- State Step 3 (ATP DnD) ---
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
-
-  const [bankTP, setBankTP] = useState([
-    { id: 'tp-3', title: 'TP.3', text: 'Merancang model jaring-jaring makanan sederhana.' },
-    { id: 'tp-4', title: 'TP.4', text: 'Menjelaskan dampak pencemaran air terhadap ekosistem sungai.' },
-    { id: 'tp-5', title: 'TP.5', text: 'Melakukan observasi lapangan di taman sekolah.' }
-  ]);
-
-  const [meetings, setMeetings] = useState([
-    {
-      id: 'meeting-1',
-      title: 'Pertemuan 1',
-      duration: '2 JP',
-      items: [{ id: 'tp-1', title: 'TP.1', text: 'Siswa mampu mengidentifikasi komponen ekosistem di lingkungan sekitar.' }]
-    },
-    {
-      id: 'meeting-2',
-      title: 'Pertemuan 2',
-      duration: '2 JP',
-      items: [{ id: 'tp-2', title: 'TP.2', text: 'Siswa menganalisis hubungan timbal balik antara makhluk hidup dan lingkungan.' }]
-    }
-  ]);
-
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    // Moving within the same list
-    if (source.droppableId === destination.droppableId) {
-      if (source.droppableId === 'bank') {
-        const newBank = Array.from(bankTP);
-        const [removed] = newBank.splice(source.index, 1);
-        newBank.splice(destination.index, 0, removed);
-        setBankTP(newBank);
-      } else {
-        const meetingIndex = meetings.findIndex(m => m.id === source.droppableId);
-        const newMeetings = [...meetings];
-        const newItems = Array.from(newMeetings[meetingIndex].items);
-        const [removed] = newItems.splice(source.index, 1);
-        newItems.splice(destination.index, 0, removed);
-        newMeetings[meetingIndex] = { ...newMeetings[meetingIndex], items: newItems };
-        setMeetings(newMeetings);
-      }
+  // Fungsi Simpan Utama ke Database (Status dikunci DRAFT)
+  const handleSaveFinalModule = async () => {
+    if (!generatedModul) {
+      alert("Draf rencana belajar belum berhasil dirakit AI.");
       return;
     }
 
-    // Moving between lists
-    let sourceItem;
-    const newBank = Array.from(bankTP);
-    const newMeetings = [...meetings];
+    try {
+      setIsSaving(true);
+      const token = await getToken();
 
-    // Remove from source
-    if (source.droppableId === 'bank') {
-      [sourceItem] = newBank.splice(source.index, 1);
-    } else {
-      const sourceMeetingIndex = newMeetings.findIndex(m => m.id === source.droppableId);
-      const sourceItems = Array.from(newMeetings[sourceMeetingIndex].items);
-      [sourceItem] = sourceItems.splice(source.index, 1);
-      newMeetings[sourceMeetingIndex] = { ...newMeetings[sourceMeetingIndex], items: sourceItems };
+      const payload = {
+        judul_modul: `Modul Ajar ${(generatedModul as any).identitas_modul?.mata_pelajaran || "Mata Pelajaran"} - Fase ${(generatedModul as any).identitas_modul?.fase_kelas || "Umum"}`,
+        jenjang: selectedJenjang || "Umum",
+        fase_kelas:
+          (generatedModul as any).identitas_modul?.fase_kelas || "Umum",
+        mapel:
+          (generatedModul as any).identitas_modul?.mata_pelajaran ||
+          "Mata Pelajaran",
+        materi:
+          (generatedModul as any).langkah_pembelajaran?.[0]?.materi_pokok ||
+          "Materi Pokok",
+        kategori_wilayah: "Umum",
+        content_json: generatedModul,
+        status: "DRAFT", // Kunci mati RPP baru sebagai draf awal
+      };
+
+      const response = await fetch(`${baseUrl}/v1/modules`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok)
+        throw new Error("Gagal mengamankan berkas ke database.");
+
+      alert("🎉 Sukses! Modul Ajar berhasil disimpan sebagai DRAFT di Arsip!");
+      router.push("/dashboard/arsip");
+    } catch (err) {
+      console.error("Crash simpan database:", err);
+      alert("Gagal mengarsip modul. Pastikan server backend Express menyala.");
+    } finally {
+      setIsSaving(false);
     }
-
-    // Add to destination
-    if (destination.droppableId === 'bank') {
-      newBank.splice(destination.index, 0, sourceItem);
-    } else {
-      const destMeetingIndex = newMeetings.findIndex(m => m.id === destination.droppableId);
-      const destItems = Array.from(newMeetings[destMeetingIndex].items);
-      destItems.splice(destination.index, 0, sourceItem);
-      newMeetings[destMeetingIndex] = { ...newMeetings[destMeetingIndex], items: destItems };
-    }
-
-    setBankTP(newBank);
-    setMeetings(newMeetings);
   };
+
+  // Logika Alur Wizard Sekaligus Trigger API Berantai (TP -> ATP -> Modul)
+  const handleNextStep = async () => {
+    if (step === 1 && (!selectedJenjang || !selectedFase || !selectedSubject)) {
+      alert("Mohon lengkapi pilihan Kurikulum terlebih dahulu.");
+      return;
+    }
+
+    const fasilitasAktif = Object.entries(facilities)
+      .filter(([_, isActive]) => isActive)
+      .map(([key]) => key);
+
+    const basePayload = {
+      jenjang: selectedJenjang,
+      fase_kelas: selectedFase,
+      mapel: selectedSubject,
+      materi: materi || "Materi Umum",
+      isu_lokal: isuLokal,
+      kearifan_lokal: activeTags.join(", "),
+      facilities: facilities,
+      gaya_belajar: learningStyles,
+      jenis_asesmen: assessments,
+      model_pembelajaran: modelPembelajaran || "Tatap Muka",
+      alokasi_waktu: alokasiWaktu || "2 JP",
+      satuan_pendidikan:
+        satuanPendidikan ||
+        (selectedJenjang
+          ? `${selectedJenjang.toUpperCase()} Nusantara`
+          : "Sekolah Dasar"),
+      jumlah_pertemuan: jumlahPertemuan,
+    };
+
+    // Eksekusi API berdasarkan Step
+    if (step === 1) {
+      const success = await generateTP(basePayload);
+      if (success) setStep(2);
+    } else if (step === 2) {
+      const success = await generateATP({
+        ...basePayload,
+        tujuan_pembelajaran_terpilih: generatedTP,
+      });
+      if (success) setStep(3);
+    } else if (step === 3) {
+      const success = await generateFullModul({
+        ...basePayload,
+        alur_pertemuan: generatedATP,
+      });
+      if (success) setStep(4);
+    } else if (step === 4) {
+      await handleSaveFinalModule();
+    }
+  };
+
+  const handlePrev = () => setStep((prev) => prev - 1);
 
   return (
     <div className="max-w-[1100px] mx-auto pb-16">
@@ -224,9 +221,18 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
-              // Oper seluruh state kurikulum ke anak komponen Step 1
+              satuanPendidikan={satuanPendidikan}
+              setSatuanPendidikan={setSatuanPendidikan}
+              materi={materi}
+              setMateri={setMateri}
+              isuLokal={isuLokal}
+              setIsuLokal={setIsuLokal}
+              alokasiWaktu={alokasiWaktu}
+              setAlokasiWaktu={setAlokasiWaktu}
+              modelPembelajaran={modelPembelajaran}
+              setModelPembelajaran={setModelPembelajaran}
               jenjangList={jenjangList}
               faseList={faseList}
               subjectList={subjectList}
@@ -252,8 +258,11 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
+              generatedTP={generatedTP}
+              jumlahPertemuan={jumlahPertemuan}
+              setJumlahPertemuan={setJumlahPertemuan}
             />
           )}
 
@@ -268,8 +277,9 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
+              generatedATP={generatedATP}
             />
           )}
 
@@ -277,14 +287,18 @@ export default function StudioAIPage() {
             <StudioStep4
               shareCommunity={shareCommunity}
               onShareChange={setShareCommunity}
+              generatedModul={generatedModul}
+              isSaving={isSaving}
+              onSave={handleSaveFinalModule}
             />
           )}
 
           {/* Tombol Aksi Navigasi Bawah */}
           <StudioFooter
             step={step}
+            isGenerating={isGenerating || isSaving}
             onPrevClick={handlePrev}
-            onNextClick={handleNext}
+            onNextClick={handleNextStep}
           />
         </div>
       </div>

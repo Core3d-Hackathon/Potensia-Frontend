@@ -24,29 +24,27 @@ export function useSaveModule() {
       setIsSaving(true);
       setError(null);
 
-      // Validasi data
       if (!moduleData) {
         throw new Error("Data modul kosong");
       }
 
-      // Get token
       const token = await getToken();
       if (!token) {
         throw new Error("Token autentikasi tidak ditemukan. Coba login ulang.");
       }
 
-      // Prepare payload sesuai backend schema
       const payload = {
-        judul_modul:
-          `Modul Ajar: ${moduleData?.identitas_modul?.mata_pelajaran || "Pembelajaran"}` ||
-          "Modul Ajar",
+        judul_modul: `Modul Ajar: ${moduleData?.identitas_modul?.mata_pelajaran || "Pembelajaran"}`,
         jenjang: moduleData?.identitas_modul?.satuan_pendidikan || "Umum",
         fase_kelas: moduleData?.identitas_modul?.fase_kelas || "Umum",
         mapel: moduleData?.identitas_modul?.mata_pelajaran || "Mata Pelajaran",
         materi: moduleData?.identitas_modul?.mata_pelajaran || "Materi Umum",
         kategori_wilayah: "Umum",
         content_json: moduleData,
-        status: shareCommunity ? "PUBLISHED" : status,
+
+        // Status selalu mengikuti parameter dari caller
+        // Jangan pernah override jadi PUBLISHED otomatis
+        status,
       };
 
       console.log("[useSaveModule] Payload:", JSON.stringify(payload, null, 2));
@@ -81,16 +79,14 @@ export function useSaveModule() {
         throw new Error(message);
       }
 
-      setIsSaving(false);
       return {
         success: true,
         message: "✅ Modul berhasil disimpan ke database!",
         data: json.data,
       };
     } catch (err: any) {
-      const errorMessage = err.message || "Terjadi kesalahan saat menyimpan";
+      const errorMessage = err?.message || "Terjadi kesalahan saat menyimpan";
       setError(errorMessage);
-      setIsSaving(false);
 
       console.error("[useSaveModule] Error:", err);
 
@@ -98,6 +94,8 @@ export function useSaveModule() {
         success: false,
         message: `❌ Gagal menyimpan: ${errorMessage}`,
       };
+    } finally {
+      setIsSaving(false);
     }
   };
 

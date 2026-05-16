@@ -311,11 +311,10 @@ export function StudioStep1(props: StudioStep1Props) {
                 key={label}
                 onClick={() => handleAddTag(label)}
                 disabled={activeTags.includes(label)}
-                className={`px-4 py-2.5 rounded-full text-xs font-semibold border transition-all ${
-                  activeTags.includes(label)
+                className={`px-4 py-2.5 rounded-full text-xs font-semibold border transition-all ${activeTags.includes(label)
                     ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed opacity-60"
                     : "bg-white border-zinc-300 text-zinc-600 hover:border-[#00a870] hover:text-[#00a870] active:scale-95"
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -416,11 +415,10 @@ export function StudioStep1(props: StudioStep1Props) {
               <div
                 key={style.id}
                 onClick={() => toggleLearningStyle(style.id)}
-                className={`cursor-pointer rounded-2xl p-5 border-2 transition-all flex flex-col items-center text-center gap-3 ${
-                  isActive
+                className={`cursor-pointer rounded-2xl p-5 border-2 transition-all flex flex-col items-center text-center gap-3 ${isActive
                     ? "bg-[#e8faf4] border-[#00a870] shadow-sm"
                     : "bg-white border-zinc-100 hover:border-teal-200"
-                }`}
+                  }`}
               >
                 <div
                   className={`p-3 rounded-full ${isActive ? "bg-[#00a870] text-white" : "bg-zinc-100 text-zinc-500"}`}
@@ -512,11 +510,10 @@ export function StudioStep1(props: StudioStep1Props) {
                   type="button"
                   key={assessment.id}
                   onClick={() => toggleAssessment(assessment.id)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                    isActive
+                  className={`px-4 py-2 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isActive
                       ? "bg-[#e8faf4] border-[#00a870] text-[#00a870]"
                       : "bg-white border-zinc-200 text-zinc-600 hover:border-[#00a870] hover:text-[#00a870]"
-                  }`}
+                    }`}
                 >
                   {isActive && <CheckCircle2 className="w-3.5 h-3.5" />}{" "}
                   {assessment.label}

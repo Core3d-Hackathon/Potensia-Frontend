@@ -9,7 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 
-export function StudioStep3() {
+export function StudioStep3(props: any) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
       {/* Header Step 3 */}

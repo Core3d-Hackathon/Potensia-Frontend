@@ -46,7 +46,7 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <div className="flex items-center gap-3">
           {/* Bagian Nama User dan Email Dinamis */}
-          <div className="flex flex-col items-end max-w-[150px] sm:max-w-[200px]">
+          <div className="flex flex-col items-end max-w-37.5 sm:max-w-50">
             <span className="text-zinc-900 font-bold text-sm truncate w-full text-right">
               {isLoadingProfile ? "Memuat..." : user?.name || "User Potensia"}
             </span>

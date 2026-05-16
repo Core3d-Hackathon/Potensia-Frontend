@@ -1,27 +1,41 @@
 import { useEffect, useState } from "react";
-import { useSignIn, useAuth } from "@clerk/nextjs";
+import { useClerk, useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 export const useGoogleLogin = () => {
-  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
+  // KITA GANTI useSignIn() MENJADI useClerk()
+  const clerk = useClerk();
   const { isLoaded: isAuthLoaded, userId, getToken } = useAuth();
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  // Fungsi untuk trigger popup Google
-  const handleGoogleLogin = () => {
-    if (!isSignInLoaded) return;
+  const handleGoogleLogin = async () => {
+    console.log("1. Tombol ditekan!");
 
-    signIn.authenticateWithRedirect({
-      strategy: "oauth_google",
-      redirectUrl: "/sso-callback",
-      redirectUrlComplete: "/dashboard",
-    });
+    // Cek apakah mesin utama Clerk sudah siap
+    if (!clerk || !clerk.client) {
+      console.warn("2. Clerk belum siap, harap tunggu sebentar.");
+      return;
+    }
+
+    try {
+      console.log("3. Clerk siap. Memulai redirect ke Google...");
+
+      // Menggunakan clerk.client.signIn adalah cara paling stabil dan langsung
+      await clerk.client.signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      });
+
+      console.log("4. Perintah redirect berhasil dikirim!");
+    } catch (error) {
+      console.error("X. Gagal melakukan redirect ke Google:", error);
+    }
   };
 
-  // Fungsi internal untuk sync ke backend
   const syncUserToBackend = async () => {
     try {
       setIsLoading(true);
@@ -48,7 +62,6 @@ export const useGoogleLogin = () => {
     }
   };
 
-  // Otomatis jalan ketika Clerk mendeteksi user sudah login
   useEffect(() => {
     if (isAuthLoaded && userId) {
       syncUserToBackend();
@@ -56,7 +69,6 @@ export const useGoogleLogin = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthLoaded, userId]);
 
-  // Kembalikan data dan fungsi yang dibutuhkan oleh UI
   return {
     handleGoogleLogin,
     isLoading,

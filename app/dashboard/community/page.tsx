@@ -28,6 +28,10 @@ export default function CommunityPage() {
   const [faseKelas, setFaseKelas] = useState("");
   const [activeKategori, setActiveKategori] = useState("Semua");
 
+  // 🌟 FITUR BARU: State lokal untuk melacak modul mana yang sudah di-upvote di sesi ini
+  // Biar tombolnya langsung interaktif berubah warna pas diklik!
+  const [localUpvotes, setLocalUpvotes] = useState<Record<string, boolean>>({});
+
   const quickFilters = [
     { name: "Semua", icon: LayoutGrid },
     { name: "Pegunungan", icon: Mountain },
@@ -59,6 +63,18 @@ export default function CommunityPage() {
     if (kategori?.toLowerCase().includes("kota")) return Building2;
     if (kategori?.toLowerCase().includes("desa")) return TreePine;
     return LayoutGrid;
+  };
+
+  // 🌟 FITUR BARU: Handler Interaktif Upvote
+  const handleUpvoteClick = (postId: string) => {
+    // 1. Ubah UI secara instan (Animasi warna & jempol)
+    setLocalUpvotes((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }));
+
+    // 2. Tembak API ke backend (yang akan menambah +10 Poin XP ke author)
+    toggleUpvote(postId);
   };
 
   return (
@@ -105,6 +121,8 @@ export default function CommunityPage() {
                 <option value="Biologi">Biologi</option>
                 <option value="Sejarah">Sejarah</option>
                 <option value="Matematika">Matematika</option>
+                <option value="IPAS">IPAS</option>
+                <option value="Fisika">Fisika</option>
               </select>
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <ChevronDown className="h-4 w-4 text-zinc-400" />
@@ -118,6 +136,8 @@ export default function CommunityPage() {
               >
                 <option value="">Semua Fase/Kelas</option>
                 <option value="A">Fase A</option>
+                <option value="B">Fase B</option>
+                <option value="C">Fase C</option>
                 <option value="D">Fase D</option>
                 <option value="E">Fase E</option>
                 <option value="F">Fase F</option>
@@ -157,15 +177,16 @@ export default function CommunityPage() {
           <Loader className="w-10 h-10 text-[#00a870] animate-spin" />
         </div>
       ) : modules.length === 0 ? (
-        <div className="text-center py-20 text-zinc-500 font-medium">
-          Belum ada modul publik yang sesuai kriteria pencarianmu.
+        <div className="text-center py-20 text-zinc-500 font-medium bg-white rounded-3xl border border-zinc-200/60 shadow-sm">
+          Belum ada modul publik yang sesuai dengan kriteria pencarianmu.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((post) => {
             const BadgeIcon = getBadgeIcon(post.kategori_wilayah);
-            // Default image random seed based on ID
+            // Gambar cover di-generate menggunakan ID agar konsisten
             const coverImage = `https://picsum.photos/seed/${post.id}/800/400`;
+            const isUpvoted = localUpvotes[post.id]; // Cek status upvote lokal
 
             return (
               <div
@@ -221,7 +242,7 @@ export default function CommunityPage() {
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-zinc-900 leading-none mb-1 line-clamp-1">
+                        <span className="text-sm font-bold text-zinc-900 leading-none mb-1 line-clamp-1 max-w-[120px]">
                           {post.author.name}
                         </span>
                         <span className="text-[10px] text-zinc-500 font-medium">
@@ -230,15 +251,23 @@ export default function CommunityPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      {/* 🌟 FITUR BARU: TOMBOL UPVOTE INTERAKTIF 🌟 */}
                       <button
-                        onClick={() => toggleUpvote(post.id)}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-teal-600 transition-colors text-xs font-bold"
+                        onClick={() => handleUpvoteClick(post.id)}
+                        className={`flex items-center gap-1.5 transition-all duration-300 text-xs font-bold px-3 py-1.5 rounded-lg border ${
+                          isUpvoted
+                            ? "bg-teal-50 text-teal-600 border-teal-100 scale-105 shadow-sm"
+                            : "bg-transparent text-zinc-500 border-transparent hover:bg-zinc-50 hover:text-teal-600"
+                        }`}
                       >
-                        <ThumbsUp className="w-3.5 h-3.5" />
-                        {post.upvotes ||
-                          Math.floor(Math.random() * 50) + 1}{" "}
-                        {/* Fallback dummy likes if backend doesn't have it yet */}
+                        <ThumbsUp
+                          className={`w-4 h-4 transition-transform duration-300 ${
+                            isUpvoted ? "fill-teal-600 -translate-y-0.5" : ""
+                          }`}
+                        />
+                        {/* Menampilkan total real dari DB */}
+                        {post.upvote_count || 0}
                       </button>
                     </div>
                   </div>

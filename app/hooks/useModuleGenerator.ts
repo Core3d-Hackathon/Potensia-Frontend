@@ -1,17 +1,15 @@
-// app/hooks/useModuleGenerator.ts
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 
 export const useModuleGenerator = () => {
   const { getToken } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedTP, setGeneratedTP] = useState([]);
-  const [generatedATP, setGeneratedATP] = useState([]);
+  const [generatedTP, setGeneratedTP] = useState<any[]>([]);
+  const [generatedATP, setGeneratedATP] = useState<any[]>([]);
   const [generatedModul, setGeneratedModul] = useState(null);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-  // Langkah 1: Generate TP
   const generateTP = async (payload: any) => {
     setIsGenerating(true);
     try {
@@ -32,7 +30,6 @@ export const useModuleGenerator = () => {
     }
   };
 
-  // Langkah 2: Generate ATP
   const generateATP = async (payload: any) => {
     setIsGenerating(true);
     try {
@@ -53,7 +50,6 @@ export const useModuleGenerator = () => {
     }
   };
 
-  // Langkah 3: Generate Modul Sempurna
   const generateFullModul = async (payload: any) => {
     setIsGenerating(true);
     try {
@@ -80,7 +76,9 @@ export const useModuleGenerator = () => {
     generateATP,
     generateFullModul,
     generatedTP,
+    setGeneratedTP, // 🌟 EXPORT SETTER BARU
     generatedATP,
+    setGeneratedATP, // 🌟 EXPORT SETTER BARU
     generatedModul,
   };
 };

@@ -25,14 +25,16 @@ export default function StudioAIPage() {
   const { getToken } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-  // 1. Konsumsi Hook Generator AI
+  // 1. Konsumsi Hook Generator AI (🌟 FIX: Tambahkan setGeneratedTP dan setGeneratedATP disini)
   const {
     isGenerating,
     generateTP,
     generateATP,
     generateFullModul,
     generatedTP,
+    setGeneratedTP, // <--- INI YANG TADI KETINGGALAN DITARIK
     generatedATP,
+    setGeneratedATP, // <--- INI JUGA
     generatedModul,
   } = useModuleGenerator();
 
@@ -106,23 +108,17 @@ export default function StudioAIPage() {
       setIsSaving(true);
       const token = await getToken();
 
-      // 🌟 FORMATTING DATA CANTIK SESUAI CONTOH DATABASE-MU 🌟
-      // 1. Jenjang (sd -> SD)
+      // FORMATTING DATA CANTIK
       const jenjangFormat = selectedJenjang
         ? selectedJenjang.toUpperCase()
         : "Umum";
-
-      // 2. Fase Kelas (A -> Fase A)
       const faseFormat = selectedFase ? `Fase ${selectedFase}` : "Umum";
-
-      // 3. Mapel & Materi
       const mapelFormat = selectedSubject || "Umum";
       const materiFormat = materi || "Materi Umum";
 
-      // 4. Kategori Wilayah (Mengambil kata pertama dari tag, misal "Pesisir Pantai" -> "Pesisir")
       let wilayahFormat = "Umum";
       if (activeTags.length > 0) {
-        wilayahFormat = activeTags[0].split(" ")[0]; // Mengambil kata depan saja
+        wilayahFormat = activeTags[0].split(" ")[0];
       }
 
       const payload = {
@@ -133,7 +129,7 @@ export default function StudioAIPage() {
         materi: materiFormat,
         kategori_wilayah: wilayahFormat,
         content_json: generatedModul,
-        status: "DRAFT", // Kunci mati RPP baru sebagai draf awal
+        status: "DRAFT",
       };
 
       const response = await fetch(`${baseUrl}/v1/modules`, {
@@ -169,8 +165,11 @@ export default function StudioAIPage() {
       .filter(([_, isActive]) => isActive)
       .map(([key]) => key);
 
+    const jenjangLengkap =
+      jenjangList.find((j) => j.key === selectedJenjang)?.label || "SD/MI";
+
     const basePayload = {
-      jenjang: selectedJenjang ? selectedJenjang.toUpperCase() : "Umum",
+      jenjang: jenjangLengkap,
       fase_kelas: selectedFase,
       mapel: selectedSubject,
       materi: materi || "Materi Umum",
@@ -185,7 +184,6 @@ export default function StudioAIPage() {
       jumlah_pertemuan: jumlahPertemuan,
     };
 
-    // Eksekusi API berdasarkan Step
     if (step === 1) {
       const success = await generateTP(basePayload);
       if (success) setStep(2);
@@ -210,15 +208,11 @@ export default function StudioAIPage() {
 
   return (
     <div className="max-w-[1100px] mx-auto pb-16">
-      {/* Header Aplikasi */}
       <StudioHeader />
 
-      {/* Main Wizard Card Container */}
       <div className="bg-white rounded-[2rem] border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-        {/* Indikator Langkah Aktif */}
         <StudioStepper currentStep={step} />
 
-        {/* Area Render Komponen Form Konten Dinamis */}
         <div className="p-8 sm:p-12 flex-1 flex flex-col">
           {step === 1 && (
             <StudioStep1
@@ -271,6 +265,7 @@ export default function StudioAIPage() {
               onNext={handleNextStep}
               onPrev={handlePrev}
               generatedTP={generatedTP}
+              setGeneratedTP={setGeneratedTP} // 🌟 BERHASIL DIPASSING
               jumlahPertemuan={jumlahPertemuan}
               setJumlahPertemuan={setJumlahPertemuan}
             />
@@ -290,6 +285,7 @@ export default function StudioAIPage() {
               onNext={handleNextStep}
               onPrev={handlePrev}
               generatedATP={generatedATP}
+              setGeneratedATP={setGeneratedATP} // 🌟 BERHASIL DIPASSING
             />
           )}
 
@@ -303,7 +299,6 @@ export default function StudioAIPage() {
             />
           )}
 
-          {/* Tombol Aksi Navigasi Bawah */}
           <StudioFooter
             step={step}
             isGenerating={isGenerating || isSaving}

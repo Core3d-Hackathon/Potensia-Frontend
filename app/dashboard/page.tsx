@@ -7,6 +7,7 @@ import {
   TrendingUp,
   FileText,
   Download,
+  ThumbsUp,
   Trophy,
   ArrowRight,
   FileCheck2,
@@ -102,7 +103,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-            <Download className="w-6 h-6 text-indigo-500" />
+            <ThumbsUp className="w-6 h-6 text-indigo-500" />
           </div>
         </div>
 

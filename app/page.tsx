@@ -23,15 +23,15 @@ export default function LandingPage() {
 
       {/* Background Decorative Blobs */}
       <div className="absolute top-0 left-0 w-full h-screen overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-teal-400/20 rounded-full blur-[100px]" />
-        <div className="absolute top-40 -left-40 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-[100px]" />
+        <div className="absolute -top-40 -right-40 w-150 h-150 bg-teal-400/20 rounded-full blur-[100px]" />
+        <div className="absolute top-40 -left-40 w-125 h-125 bg-blue-400/10 rounded-full blur-[100px]" />
       </div>
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-zinc-200/50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#00a870] to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-10 h-10 bg-linear-to-br from-[#00a870] to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-black tracking-tight text-zinc-900">Potensia <span className="text-[#00a870]">AI</span></span>
@@ -61,7 +61,7 @@ export default function LandingPage() {
 
           <motion.h1 variants={fadeUpVariants} className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] text-zinc-900 mb-8">
             Rancang Pembelajaran <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00a870] to-blue-600">Lebih Cepat, Lebih Bermakna.</span>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-[#00a870] to-blue-600">Lebih Cepat, Lebih Bermakna.</span>
           </motion.h1>
 
           <motion.p variants={fadeUpVariants} className="text-lg md:text-xl text-zinc-600 mb-12 max-w-2xl mx-auto leading-relaxed">

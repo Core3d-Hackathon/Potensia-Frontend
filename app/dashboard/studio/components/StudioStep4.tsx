@@ -52,7 +52,7 @@ export function StudioStep4(props: StudioStep4Props) {
 
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const { saveModule, isSaving } = useSaveModule();
+  const { saveModule, isSaving, error } = useSaveModule();
 
   useEffect(() => {
     setIsMounted(true);
@@ -61,21 +61,26 @@ export function StudioStep4(props: StudioStep4Props) {
   const handleSaveToDatabase = async () => {
     console.log("[StudioStep4] Tombol Simpan diklik");
 
-    if (!generatedModul) {
-      alert("Data modul kosong. Selesaikan generate di Step 3 dulu.");
-      return;
-    }
+    try {
+      if (!generatedModul) {
+        alert("Data modul kosong. Selesaikan generate di Step 3 dulu.");
+        return;
+      }
 
-    const result = await saveModule(generatedModul, {
-      status: "DRAFT",
-      shareCommunity,
-    });
+      const result = await saveModule(generatedModul, {
+        status: "DRAFT",
+        shareCommunity,
+      });
 
-    if (result.success) {
-      alert(result.message);
-      router.push("/dashboard/archive");
-    } else {
-      alert(result.message);
+      if (result.success) {
+        alert(result.message);
+        router.push("/dashboard/archive");
+      } else {
+        alert(result.message);
+      }
+    } catch (err) {
+      console.error("[StudioStep4] Gagal menyimpan:", err);
+      alert("Terjadi kesalahan tak terduga saat menyimpan modul.");
     }
   };
 
@@ -113,7 +118,6 @@ export function StudioStep4(props: StudioStep4Props) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Kolom Kiri */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 sm:p-10 relative overflow-hidden">
           <div className="absolute top-8 right-8 bg-[#e8faf4] text-[#00a870] text-[0.65rem] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 tracking-wide shadow-sm border border-emerald-100">
             <Sparkles className="w-3.5 h-3.5" /> AI PERFECTED
@@ -130,7 +134,6 @@ export function StudioStep4(props: StudioStep4Props) {
 
           <hr className="border-t-2 border-zinc-900 mb-8" />
 
-          {/* Section 1: Identitas */}
           <div className="mb-10">
             <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-zinc-500" /> I. Identitas
@@ -162,7 +165,6 @@ export function StudioStep4(props: StudioStep4Props) {
             </div>
           </div>
 
-          {/* Section 2: Skenario */}
           <div className="mb-10">
             <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <ListTodo className="w-4 h-4 text-zinc-500" /> II. Rincian
@@ -216,7 +218,6 @@ export function StudioStep4(props: StudioStep4Props) {
             </div>
           </div>
 
-          {/* Section 3: LKPD */}
           <div>
             <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-zinc-500" /> III. Validasi
@@ -242,7 +243,6 @@ export function StudioStep4(props: StudioStep4Props) {
           </div>
         </div>
 
-        {/* Kolom Kanan */}
         <div className="lg:col-span-1 space-y-6 relative z-10">
           <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-zinc-900 mb-4">
@@ -279,22 +279,30 @@ export function StudioStep4(props: StudioStep4Props) {
               <button
                 type="button"
                 onClick={() => onShareChange(!shareCommunity)}
-                className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none shrink-0 ${shareCommunity ? "bg-[#00a870]" : "bg-zinc-200"}`}
+                className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none shrink-0 ${
+                  shareCommunity ? "bg-[#00a870]" : "bg-zinc-200"
+                }`}
               >
                 <div
-                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${shareCommunity ? "translate-x-6" : "translate-x-0"}`}
+                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${
+                    shareCommunity ? "translate-x-6" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
+
             <button
               type="button"
               className="w-full border-2 border-zinc-200 hover:border-[#00a870] text-zinc-600 hover:text-[#00a870] rounded-xl p-3.5 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
             >
               <Pencil className="w-4 h-4" /> Edit Manual
             </button>
+
+            {error && (
+              <p className="mt-3 text-sm text-red-600 font-medium">{error}</p>
+            )}
           </div>
 
-          {/* Tombol Simpan */}
           <div className="relative z-20">
             <button
               type="button"
@@ -308,12 +316,13 @@ export function StudioStep4(props: StudioStep4Props) {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Menyimpan Ke
-                  Database...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Menyimpan Ke Database...
                 </>
               ) : (
                 <>
-                  <FolderArchive className="w-5 h-5" /> Simpan ke Arsip Modulsss
+                  <FolderArchive className="w-5 h-5" />
+                  Simpan ke Arsip Modul
                 </>
               )}
             </button>

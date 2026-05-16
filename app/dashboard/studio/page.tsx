@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // 🌟 FIX: Pastikan ini terimport sempurna
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { StudioHeader } from "./components/StudioHeader";
 import { StudioStepper } from "./components/StudioStepper";
@@ -21,7 +21,7 @@ export default function StudioAIPage() {
 
   // State & Hooks untuk Save Database
   const [isSaving, setIsSaving] = useState(false);
-  const router = useRouter(); // 🌟 Menghubungkan router Next.js
+  const router = useRouter();
   const { getToken } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
@@ -106,18 +106,32 @@ export default function StudioAIPage() {
       setIsSaving(true);
       const token = await getToken();
 
+      // 🌟 FORMATTING DATA CANTIK SESUAI CONTOH DATABASE-MU 🌟
+      // 1. Jenjang (sd -> SD)
+      const jenjangFormat = selectedJenjang
+        ? selectedJenjang.toUpperCase()
+        : "Umum";
+
+      // 2. Fase Kelas (A -> Fase A)
+      const faseFormat = selectedFase ? `Fase ${selectedFase}` : "Umum";
+
+      // 3. Mapel & Materi
+      const mapelFormat = selectedSubject || "Umum";
+      const materiFormat = materi || "Materi Umum";
+
+      // 4. Kategori Wilayah (Mengambil kata pertama dari tag, misal "Pesisir Pantai" -> "Pesisir")
+      let wilayahFormat = "Umum";
+      if (activeTags.length > 0) {
+        wilayahFormat = activeTags[0].split(" ")[0]; // Mengambil kata depan saja
+      }
+
       const payload = {
-        judul_modul: `Modul Ajar ${(generatedModul as any).identitas_modul?.mata_pelajaran || "Mata Pelajaran"} - Fase ${(generatedModul as any).identitas_modul?.fase_kelas || "Umum"}`,
-        jenjang: selectedJenjang || "Umum",
-        fase_kelas:
-          (generatedModul as any).identitas_modul?.fase_kelas || "Umum",
-        mapel:
-          (generatedModul as any).identitas_modul?.mata_pelajaran ||
-          "Mata Pelajaran",
-        materi:
-          (generatedModul as any).langkah_pembelajaran?.[0]?.materi_pokok ||
-          "Materi Pokok",
-        kategori_wilayah: "Umum",
+        judul_modul: `Modul Ajar: ${mapelFormat}`,
+        jenjang: jenjangFormat,
+        fase_kelas: faseFormat,
+        mapel: mapelFormat,
+        materi: materiFormat,
+        kategori_wilayah: wilayahFormat,
         content_json: generatedModul,
         status: "DRAFT", // Kunci mati RPP baru sebagai draf awal
       };
@@ -135,7 +149,7 @@ export default function StudioAIPage() {
         throw new Error("Gagal mengamankan berkas ke database.");
 
       alert("🎉 Sukses! Modul Ajar berhasil disimpan sebagai DRAFT di Arsip!");
-      router.push("/dashboard/arsip");
+      router.push("/dashboard/archive");
     } catch (err) {
       console.error("Crash simpan database:", err);
       alert("Gagal mengarsip modul. Pastikan server backend Express menyala.");
@@ -156,7 +170,7 @@ export default function StudioAIPage() {
       .map(([key]) => key);
 
     const basePayload = {
-      jenjang: selectedJenjang,
+      jenjang: selectedJenjang ? selectedJenjang.toUpperCase() : "Umum",
       fase_kelas: selectedFase,
       mapel: selectedSubject,
       materi: materi || "Materi Umum",
@@ -167,11 +181,7 @@ export default function StudioAIPage() {
       jenis_asesmen: assessments,
       model_pembelajaran: modelPembelajaran || "Tatap Muka",
       alokasi_waktu: alokasiWaktu || "2 JP",
-      satuan_pendidikan:
-        satuanPendidikan ||
-        (selectedJenjang
-          ? `${selectedJenjang.toUpperCase()} Nusantara`
-          : "Sekolah Dasar"),
+      satuan_pendidikan: satuanPendidikan || "Sekolah Nusantara",
       jumlah_pertemuan: jumlahPertemuan,
     };
 

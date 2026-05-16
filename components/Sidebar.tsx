@@ -1,14 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LayoutDashboard, Sparkles, Users, Folder, Crown, Plus, X } from "lucide-react";
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
+  const pathname = usePathname();
+
   const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard", isActive: true },
-    { name: "Studio Ai", icon: Sparkles, href: "/dashboard/studio" },
-    { name: "Ruang Komunitas", icon: Users, href: "/dashboard/community" },
-    { name: "Arsip", icon: Folder, href: "/dashboard/archive" },
-    { name: "Leaderboard", icon: Crown, href: "/dashboard/leaderboard" },
+    { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard", isActive: pathname === "/dashboard" },
+    { name: "Studio Ai", icon: Sparkles, href: "/dashboard/studio", isActive: pathname.includes("/dashboard/studio") },
+    { name: "Ruang Komunitas", icon: Users, href: "/dashboard/community", isActive: pathname.includes("/dashboard/community") },
+    { name: "Arsip", icon: Folder, href: "/dashboard/archive", isActive: pathname.includes("/dashboard/archive") },
+    { name: "Leaderboard", icon: Crown, href: "/dashboard/leaderboard", isActive: pathname.includes("/dashboard/leaderboard") },
   ];
 
   return (

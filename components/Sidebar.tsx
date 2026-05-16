@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Sparkles, Users, Folder, Crown, Plus, X } from "lucide-react";
+import { LayoutDashboard, Sparkles, Users, Folder, Crown, Plus, X, User } from "lucide-react";
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -14,6 +14,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { name: "Ruang Komunitas", icon: Users, href: "/dashboard/community", isActive: pathname.includes("/dashboard/community") },
     { name: "Arsip", icon: Folder, href: "/dashboard/archive", isActive: pathname.includes("/dashboard/archive") },
     { name: "Leaderboard", icon: Crown, href: "/dashboard/leaderboard", isActive: pathname.includes("/dashboard/leaderboard") },
+    { name: "Profil Saya", icon: User, href: "/dashboard/profile", isActive: pathname.includes("/dashboard/profile") },
   ];
 
   return (

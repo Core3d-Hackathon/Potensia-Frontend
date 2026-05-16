@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // 🌟 FIX: Pastikan ini terimport sempurna
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { StudioHeader } from "./components/StudioHeader";
 import { StudioStepper } from "./components/StudioStepper";
@@ -21,18 +21,20 @@ export default function StudioAIPage() {
 
   // State & Hooks untuk Save Database
   const [isSaving, setIsSaving] = useState(false);
-  const router = useRouter(); // 🌟 Menghubungkan router Next.js
+  const router = useRouter();
   const { getToken } = useAuth();
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-  // 1. Konsumsi Hook Generator AI
+  // 1. Konsumsi Hook Generator AI (🌟 FIX: Tambahkan setGeneratedTP dan setGeneratedATP disini)
   const {
     isGenerating,
     generateTP,
     generateATP,
     generateFullModul,
     generatedTP,
+    setGeneratedTP, // <--- INI YANG TADI KETINGGALAN DITARIK
     generatedATP,
+    setGeneratedATP, // <--- INI JUGA
     generatedModul,
   } = useModuleGenerator();
 
@@ -106,20 +108,28 @@ export default function StudioAIPage() {
       setIsSaving(true);
       const token = await getToken();
 
+      // FORMATTING DATA CANTIK
+      const jenjangFormat = selectedJenjang
+        ? selectedJenjang.toUpperCase()
+        : "Umum";
+      const faseFormat = selectedFase ? `Fase ${selectedFase}` : "Umum";
+      const mapelFormat = selectedSubject || "Umum";
+      const materiFormat = materi || "Materi Umum";
+
+      let wilayahFormat = "Umum";
+      if (activeTags.length > 0) {
+        wilayahFormat = activeTags[0].split(" ")[0];
+      }
+
       const payload = {
-        judul_modul: `Modul Ajar ${(generatedModul as any).identitas_modul?.mata_pelajaran || "Mata Pelajaran"} - Fase ${(generatedModul as any).identitas_modul?.fase_kelas || "Umum"}`,
-        jenjang: selectedJenjang || "Umum",
-        fase_kelas:
-          (generatedModul as any).identitas_modul?.fase_kelas || "Umum",
-        mapel:
-          (generatedModul as any).identitas_modul?.mata_pelajaran ||
-          "Mata Pelajaran",
-        materi:
-          (generatedModul as any).langkah_pembelajaran?.[0]?.materi_pokok ||
-          "Materi Pokok",
-        kategori_wilayah: "Umum",
+        judul_modul: `Modul Ajar: ${mapelFormat}`,
+        jenjang: jenjangFormat,
+        fase_kelas: faseFormat,
+        mapel: mapelFormat,
+        materi: materiFormat,
+        kategori_wilayah: wilayahFormat,
         content_json: generatedModul,
-        status: "DRAFT", // Kunci mati RPP baru sebagai draf awal
+        status: "DRAFT",
       };
 
       const response = await fetch(`${baseUrl}/v1/modules`, {
@@ -135,7 +145,7 @@ export default function StudioAIPage() {
         throw new Error("Gagal mengamankan berkas ke database.");
 
       alert("🎉 Sukses! Modul Ajar berhasil disimpan sebagai DRAFT di Arsip!");
-      router.push("/dashboard/arsip");
+      router.push("/dashboard/archive");
     } catch (err) {
       console.error("Crash simpan database:", err);
       alert("Gagal mengarsip modul. Pastikan server backend Express menyala.");
@@ -155,8 +165,11 @@ export default function StudioAIPage() {
       .filter(([_, isActive]) => isActive)
       .map(([key]) => key);
 
+    const jenjangLengkap =
+      jenjangList.find((j) => j.key === selectedJenjang)?.label || "SD/MI";
+
     const basePayload = {
-      jenjang: selectedJenjang,
+      jenjang: jenjangLengkap,
       fase_kelas: selectedFase,
       mapel: selectedSubject,
       materi: materi || "Materi Umum",
@@ -167,15 +180,10 @@ export default function StudioAIPage() {
       jenis_asesmen: assessments,
       model_pembelajaran: modelPembelajaran || "Tatap Muka",
       alokasi_waktu: alokasiWaktu || "2 JP",
-      satuan_pendidikan:
-        satuanPendidikan ||
-        (selectedJenjang
-          ? `${selectedJenjang.toUpperCase()} Nusantara`
-          : "Sekolah Dasar"),
+      satuan_pendidikan: satuanPendidikan || "Sekolah Nusantara",
       jumlah_pertemuan: jumlahPertemuan,
     };
 
-    // Eksekusi API berdasarkan Step
     if (step === 1) {
       const success = await generateTP(basePayload);
       if (success) setStep(2);
@@ -200,15 +208,11 @@ export default function StudioAIPage() {
 
   return (
     <div className="max-w-[1100px] mx-auto pb-16">
-      {/* Header Aplikasi */}
       <StudioHeader />
 
-      {/* Main Wizard Card Container */}
       <div className="bg-white rounded-[2rem] border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-        {/* Indikator Langkah Aktif */}
         <StudioStepper currentStep={step} />
 
-        {/* Area Render Komponen Form Konten Dinamis */}
         <div className="p-8 sm:p-12 flex-1 flex flex-col">
           {step === 1 && (
             <StudioStep1
@@ -261,6 +265,7 @@ export default function StudioAIPage() {
               onNext={handleNextStep}
               onPrev={handlePrev}
               generatedTP={generatedTP}
+              setGeneratedTP={setGeneratedTP} // 🌟 BERHASIL DIPASSING
               jumlahPertemuan={jumlahPertemuan}
               setJumlahPertemuan={setJumlahPertemuan}
             />
@@ -280,6 +285,7 @@ export default function StudioAIPage() {
               onNext={handleNextStep}
               onPrev={handlePrev}
               generatedATP={generatedATP}
+              setGeneratedATP={setGeneratedATP} // 🌟 BERHASIL DIPASSING
             />
           )}
 
@@ -293,7 +299,6 @@ export default function StudioAIPage() {
             />
           )}
 
-          {/* Tombol Aksi Navigasi Bawah */}
           <StudioFooter
             step={step}
             isGenerating={isGenerating || isSaving}

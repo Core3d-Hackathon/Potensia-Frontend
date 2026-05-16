@@ -105,16 +105,108 @@ export default function ModuleDetailPage() {
     }
   };
 
+  // 🌟 FITUR BARU: EXPORT KE PDF
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  // 🌟 FITUR BARU: EXPORT KE MS WORD (.doc)
+  const handleExportWord = () => {
+    if (!editForm || !editForm.content_json) return;
+
+    const { identitas_modul, langkah_pembelajaran, asesmen, lampiran_lkpd } =
+      editForm.content_json;
+
+    let html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${editForm.judul_modul}</title>
+      <style>
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.5; color: #000; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f2f2f2; }
+        h1, h2, h3, h4 { color: #000; font-weight: bold; }
+        h1 { font-size: 16pt; text-align: center; }
+        h2 { font-size: 14pt; text-align: center; margin-bottom: 30px; }
+        h3 { font-size: 13pt; margin-top: 20px; text-transform: uppercase; }
+        ul { margin-top: 0; padding-top: 0; }
+      </style>
+      </head>
+      <body>
+      <h1>MODUL AJAR KURIKULUM MERDEKA</h1>
+      <h2>${editForm.judul_modul.toUpperCase()}</h2>
+      
+      <h3>A. IDENTITAS UMUM MODUL</h3>
+      <table border="0" style="border: none;">
+        <tr><td style="border: none; width: 150px;">Satuan Pendidikan</td><td style="border: none;">: ${identitas_modul?.satuan_pendidikan || "-"}</td></tr>
+        <tr><td style="border: none;">Fase / Kelas</td><td style="border: none;">: ${identitas_modul?.fase_kelas || "-"}</td></tr>
+        <tr><td style="border: none;">Mata Pelajaran</td><td style="border: none;">: ${identitas_modul?.mata_pelajaran || "-"}</td></tr>
+        <tr><td style="border: none;">Alokasi Waktu</td><td style="border: none;">: ${identitas_modul?.alokasi_waktu || "-"}</td></tr>
+      </table>
+
+      <h3>B. LANGKAH-LANGKAH PEMBELAJARAN</h3>
+    `;
+
+    if (langkah_pembelajaran && langkah_pembelajaran.length > 0) {
+      langkah_pembelajaran.forEach((langkah: any) => {
+        html += `<h4>Pertemuan Ke-${langkah.pertemuan_ke}</h4>`;
+        if (langkah.kegiatan_awal?.length) {
+          html += `<b>1. Kegiatan Awal</b><ul>${langkah.kegiatan_awal.map((i: any) => `<li>${i}</li>`).join("")}</ul>`;
+        }
+        if (langkah.kegiatan_inti?.length) {
+          html += `<b>2. Kegiatan Inti</b><ul>${langkah.kegiatan_inti.map((i: any) => `<li>${i}</li>`).join("")}</ul>`;
+        }
+        if (langkah.kegiatan_penutup?.length) {
+          html += `<b>3. Kegiatan Penutup</b><ul>${langkah.kegiatan_penutup.map((i: any) => `<li>${i}</li>`).join("")}</ul>`;
+        }
+      });
+    } else {
+      html += `<p>Tidak ada data langkah pembelajaran.</p>`;
+    }
+
+    html += `<h3>C. INSTRUMEN & ASESMEN</h3>`;
+    if (asesmen?.formatif?.length) {
+      html += `<b>Asesmen Formatif:</b><ul>${asesmen.formatif.map((i: any) => `<li>${i}</li>`).join("")}</ul>`;
+    }
+    if (asesmen?.rubrik?.length) {
+      html += `<b>Rubrik Penilaian Kriteria Ketercapaian:</b><br/><table><tr><th>Aspek / Kriteria</th><th>Kategori: Mahir</th><th>Kategori: Berkembang</th></tr>`;
+      asesmen.rubrik.forEach((r: any) => {
+        let rObj = typeof r === "string" ? JSON.parse(r) : r;
+        html += `<tr><td>${rObj?.kriteria || "-"}</td><td>${rObj?.mahir || "-"}</td><td>${rObj?.berkembang || "-"}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    html += `<h3>D. LAMPIRAN (LEMBAR KERJA PESERTA DIDIK)</h3>`;
+    if (lampiran_lkpd?.length) {
+      lampiran_lkpd.forEach((lkpd: string) => {
+        html += `<p>${lkpd}</p>`;
+      });
+    }
+
+    html += `</body></html>`;
+
+    // Konversi string HTML jadi file blob format Word
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${editForm.judul_modul.replace(/\s+/g, "_")}_Potensia.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (isLoading)
     return (
-      <div className="flex flex-col items-center justify-center py-20 min-h-screen">
+      <div className="flex flex-col items-center justify-center py-20 min-h-screen print:hidden">
         <Loader className="w-12 h-12 text-[#00a870] animate-spin" />
         <p>Memuat detail modul...</p>
       </div>
     );
   if (error || !module || !editForm)
     return (
-      <div className="flex flex-col items-center justify-center py-20 min-h-screen">
+      <div className="flex flex-col items-center justify-center py-20 min-h-screen print:hidden">
         <AlertCircle className="w-12 h-12 text-red-500" />
         <p>{error}</p>
         <button
@@ -130,12 +222,10 @@ export default function ModuleDetailPage() {
   const { identitas_modul, langkah_pembelajaran, asesmen, lampiran_lkpd } =
     currentContent;
 
-  // ==========================================
-  // SMART INLINE EDITOR ENGINE UNTUK LKPD
-  // ==========================================
   const renderSmartLKPDSection = (rawText: string, sectionIdx: number) => {
     const colonIndex = rawText.indexOf(":");
-    if (colonIndex === -1) return <p className="text-sm">{rawText}</p>;
+    if (colonIndex === -1)
+      return <p className="text-sm text-zinc-900">{rawText}</p>;
 
     const fullTitle = rawText.substring(0, colonIndex).trim();
     const rawContent = rawText.substring(colonIndex + 1).trim();
@@ -144,33 +234,39 @@ export default function ModuleDetailPage() {
     let Icon = BookOpen;
     let themeClass = "bg-zinc-50/60 border-zinc-200 text-zinc-800";
     let iconColor = "text-zinc-500";
-    let btnColor = "text-zinc-600 bg-zinc-100 hover:bg-zinc-200";
+    let btnColor = "text-zinc-600 bg-zinc-100 hover:bg-zinc-200 print:hidden";
 
     if (lowTitle.includes("tujuan")) {
       Icon = Target;
       themeClass = "bg-emerald-50/20 border-emerald-100 text-emerald-900";
       iconColor = "text-emerald-600";
-      btnColor = "text-emerald-700 bg-emerald-100 hover:bg-emerald-200";
+      btnColor =
+        "text-emerald-700 bg-emerald-100 hover:bg-emerald-200 print:hidden";
     } else if (lowTitle.includes("alat") || lowTitle.includes("bahan")) {
       Icon = Wrench;
       themeClass = "bg-blue-50/20 border-blue-100 text-blue-900";
       iconColor = "text-blue-600";
-      btnColor = "text-blue-700 bg-blue-100 hover:bg-blue-200";
+      btnColor = "text-blue-700 bg-blue-100 hover:bg-blue-200 print:hidden";
     } else if (lowTitle.includes("apersepsi") || lowTitle.includes("awal")) {
       Icon = HelpCircle;
       themeClass = "bg-amber-50/30 border-amber-200/70 text-amber-900";
       iconColor = "text-amber-600";
-      btnColor = "text-amber-700 bg-amber-100 hover:bg-amber-200";
+      btnColor = "text-amber-700 bg-amber-100 hover:bg-amber-200 print:hidden";
     } else if (lowTitle.includes("langkah") || lowTitle.includes("prosedur")) {
       Icon = ListOrdered;
       themeClass = "bg-indigo-50/20 border-indigo-100 text-indigo-900";
       iconColor = "text-indigo-600";
-      btnColor = "text-indigo-700 bg-indigo-100 hover:bg-indigo-200";
+      btnColor =
+        "text-indigo-700 bg-indigo-100 hover:bg-indigo-200 print:hidden";
     } else if (lowTitle.includes("data") || lowTitle.includes("pengamatan")) {
       Icon = TableProperties;
       themeClass = "bg-teal-50/20 border-teal-100 text-teal-900";
       iconColor = "text-teal-600";
-      btnColor = "text-teal-700 bg-teal-100 hover:bg-teal-200";
+      btnColor = "text-teal-700 bg-teal-100 hover:bg-teal-200 print:hidden";
+    } else if (lowTitle.includes("kesimpulan") || lowTitle.includes("konsep")) {
+      Icon = Lightbulb;
+      themeClass = "bg-purple-50/30 border-purple-100 text-purple-900";
+      iconColor = "text-purple-600";
     }
 
     const items = rawContent
@@ -219,15 +315,15 @@ export default function ModuleDetailPage() {
     return (
       <div
         key={sectionIdx}
-        className={`border rounded-2xl p-6 sm:p-7 shadow-sm transition-all ${themeClass}`}
+        className={`border rounded-2xl p-6 sm:p-7 shadow-sm transition-all ${themeClass} print:break-inside-avoid print:shadow-none print:border-zinc-300`}
       >
-        <div className="flex items-center gap-3 border-b pb-3 mb-4 border-zinc-200/60">
+        <div className="flex items-center gap-3 border-b pb-3 mb-4 border-zinc-200/60 print:border-zinc-300">
           <div
-            className={`p-2 rounded-xl bg-white shadow-sm border border-zinc-100 ${iconColor}`}
+            className={`p-2 rounded-xl bg-white shadow-sm border border-zinc-100 ${iconColor} print:hidden`}
           >
             <Icon className="w-5 h-5" />
           </div>
-          <h3 className="text-sm sm:text-base font-black uppercase tracking-wider">
+          <h3 className="text-sm sm:text-base font-black uppercase tracking-wider print:text-black">
             {isEditing ? (
               <input
                 value={fullTitle}
@@ -248,11 +344,11 @@ export default function ModuleDetailPage() {
 
         {lowTitle.includes("alat") || lowTitle.includes("bahan") ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:grid-cols-2">
               {finalItems.map((item, i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-3 p-3 bg-white/80 rounded-xl border border-zinc-200/40 shadow-sm transition-all ${checkedItems[`${sectionIdx}-${i}`] ? "opacity-60" : ""}`}
+                  className={`flex items-center gap-3 p-3 bg-white/80 rounded-xl border border-zinc-200/40 shadow-sm transition-all ${checkedItems[`${sectionIdx}-${i}`] ? "opacity-60" : ""} print:shadow-none print:border-zinc-300`}
                 >
                   {!isEditing && (
                     <input
@@ -264,18 +360,18 @@ export default function ModuleDetailPage() {
                           [`${sectionIdx}-${i}`]: !p[`${sectionIdx}-${i}`],
                         }))
                       }
-                      className="w-4 h-4 rounded text-blue-600"
+                      className="w-4 h-4 rounded text-blue-600 print:appearance-none print:w-4 print:h-4 print:border-2 print:border-black"
                     />
                   )}
                   {isEditing ? (
                     <input
                       value={item}
                       onChange={(e) => handleItemUpdate(e.target.value, i)}
-                      className="flex-1 bg-transparent focus:outline-none text-xs font-semibold text-zinc-900"
+                      className="flex-1 bg-transparent focus:outline-none text-xs font-bold text-zinc-900"
                     />
                   ) : (
                     <span
-                      className={`text-xs font-semibold ${checkedItems[`${sectionIdx}-${i}`] ? "line-through text-zinc-400" : "text-zinc-700"}`}
+                      className={`text-xs font-semibold print:text-black print:text-sm ${checkedItems[`${sectionIdx}-${i}`] ? "line-through text-zinc-400 print:no-underline" : "text-zinc-700"}`}
                     >
                       {item}
                     </span>
@@ -283,7 +379,7 @@ export default function ModuleDetailPage() {
                   {isEditing && (
                     <button
                       onClick={() => handleItemRemove(i)}
-                      className="p-1 hover:bg-red-100 text-red-500 rounded-md transition-colors"
+                      className="p-1 hover:bg-red-100 text-red-500 rounded-md transition-colors print:hidden"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -301,13 +397,13 @@ export default function ModuleDetailPage() {
             )}
           </div>
         ) : lowTitle.includes("langkah") || lowTitle.includes("prosedur") ? (
-          <div className="relative pl-4 space-y-4 before:absolute before:inset-y-2 before:left-7 before:w-0.5 before:bg-zinc-200/80">
+          <div className="relative pl-4 space-y-4 before:absolute before:inset-y-2 before:left-7 before:w-0.5 before:bg-zinc-200/80 print:before:bg-transparent">
             {finalItems.map((item, i) => (
               <div key={i} className="flex items-start gap-4 relative group">
-                <div className="w-7 h-7 rounded-full bg-white border-2 border-indigo-500 font-extrabold text-xs text-indigo-600 flex items-center justify-center shrink-0 z-10 mt-1">
+                <div className="w-7 h-7 rounded-full bg-white border-2 border-indigo-500 font-extrabold text-xs text-indigo-600 flex items-center justify-center shrink-0 z-10 mt-1 print:border-black print:text-black">
                   {i + 1}
                 </div>
-                <div className="bg-white/70 flex-1 border border-zinc-100 rounded-xl p-3 flex gap-3 items-center shadow-sm">
+                <div className="bg-white/70 flex-1 border border-zinc-100 rounded-xl p-3 flex gap-3 items-center shadow-sm print:shadow-none print:border-zinc-300">
                   {isEditing ? (
                     <textarea
                       rows={2}
@@ -316,14 +412,14 @@ export default function ModuleDetailPage() {
                       className="flex-1 bg-transparent focus:outline-none text-sm font-medium text-zinc-900 resize-none"
                     />
                   ) : (
-                    <p className="text-sm text-zinc-700 font-medium leading-relaxed">
+                    <p className="text-sm text-zinc-700 font-medium leading-relaxed print:text-black">
                       {item}
                     </p>
                   )}
                   {isEditing && (
                     <button
                       onClick={() => handleItemRemove(i)}
-                      className="p-1.5 hover:bg-red-100 text-red-500 rounded-lg shrink-0"
+                      className="p-1.5 hover:bg-red-100 text-red-500 rounded-lg shrink-0 print:hidden"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -341,8 +437,8 @@ export default function ModuleDetailPage() {
             )}
           </div>
         ) : lowTitle.includes("apersepsi") || lowTitle.includes("awal") ? (
-          <div className="bg-white/90 border-l-4 border-l-amber-500 rounded-xl p-5 shadow-sm space-y-2">
-            <span className="text-[10px] uppercase font-black tracking-widest text-amber-600 block">
+          <div className="bg-white/90 border-l-4 border-l-amber-500 rounded-xl p-5 shadow-sm space-y-2 print:border-l-black print:shadow-none print:border-zinc-300">
+            <span className="text-[10px] uppercase font-black tracking-widest text-amber-600 block print:text-black">
               Pertanyaan Pemantik & Diskusi
             </span>
             {isEditing ? (
@@ -359,7 +455,7 @@ export default function ModuleDetailPage() {
                 className="w-full bg-transparent focus:outline-none text-sm text-zinc-900 font-medium italic border-b border-dashed border-amber-200"
               />
             ) : (
-              <p className="text-sm text-zinc-700 font-medium leading-relaxed italic">
+              <p className="text-sm text-zinc-700 font-medium leading-relaxed italic print:text-black">
                 "{rawContent}"
               </p>
             )}
@@ -375,7 +471,6 @@ export default function ModuleDetailPage() {
               const tableHeaders = [...rawContent.matchAll(/\[(.*?)\]/g)].map(
                 (m) => m[1],
               );
-
               return (
                 <div className="space-y-4">
                   {isEditing ? (
@@ -390,27 +485,26 @@ export default function ModuleDetailPage() {
                           recombined;
                         setEditForm(updated);
                       }}
-                      className="w-full bg-white/60 p-3 rounded-xl focus:outline-none text-sm text-teal-900 font-medium border border-teal-200"
+                      className="w-full bg-white/60 p-3 rounded-xl focus:outline-none text-sm text-teal-900 font-bold border border-teal-200"
                       placeholder="Ketik instruksi pengisian tabel di sini..."
                     />
                   ) : (
-                    <p className="text-xs sm:text-sm text-teal-800 font-medium leading-relaxed mb-3">
+                    <p className="text-xs sm:text-sm text-teal-800 font-medium leading-relaxed mb-3 print:text-black">
                       {parsedInstruction}
                     </p>
                   )}
-
                   {tableHeaders.length > 0 ? (
-                    <div className="overflow-x-auto border border-teal-200 rounded-xl shadow-sm bg-white">
-                      <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                    <div className="overflow-x-auto border border-teal-200 rounded-xl shadow-sm bg-white print:border-black print:shadow-none">
+                      <table className="w-full text-left border-collapse text-xs sm:text-sm print:text-black">
                         <thead>
-                          <tr className="bg-teal-50 border-b border-teal-200 text-teal-800 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="p-3 w-12 text-center border-r border-teal-200">
+                          <tr className="bg-teal-50 border-b border-teal-200 text-teal-800 font-bold uppercase tracking-wider text-[10px] print:bg-white print:border-black print:text-black">
+                            <th className="p-3 w-12 text-center border-r border-teal-200 print:border-black">
                               No
                             </th>
                             {tableHeaders.map((hdr, hIdx) => (
                               <th
                                 key={hIdx}
-                                className="p-3 border-r border-teal-200"
+                                className="p-3 border-r border-teal-200 print:border-black"
                               >
                                 {isEditing ? (
                                   <div className="flex items-center gap-2">
@@ -426,7 +520,7 @@ export default function ModuleDetailPage() {
                                         ] = recombined;
                                         setEditForm(updated);
                                       }}
-                                      className="w-full bg-white px-2 py-1.5 rounded border border-teal-100 focus:outline-none focus:border-teal-400 text-teal-900"
+                                      className="w-full bg-white px-2 py-1.5 rounded border border-teal-100 focus:outline-none focus:border-teal-400 text-teal-900 font-bold"
                                     />
                                     <button
                                       onClick={() => {
@@ -440,7 +534,7 @@ export default function ModuleDetailPage() {
                                         ] = recombined;
                                         setEditForm(updated);
                                       }}
-                                      className="text-red-400 hover:text-red-600 shrink-0"
+                                      className="text-red-400 hover:text-red-600 shrink-0 print:hidden"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -451,7 +545,7 @@ export default function ModuleDetailPage() {
                               </th>
                             ))}
                             {isEditing && (
-                              <th className="p-2 w-10 text-center">
+                              <th className="p-2 w-10 text-center print:hidden">
                                 <button
                                   onClick={() => {
                                     const newHeaders = [
@@ -473,28 +567,33 @@ export default function ModuleDetailPage() {
                             )}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-teal-100">
+                        <tbody className="divide-y divide-teal-100 print:divide-black">
                           {[1, 2, 3].map((row) => (
-                            <tr key={row} className="hover:bg-teal-50/10">
-                              <td className="p-3 text-center border-r border-teal-100 text-zinc-400">
+                            <tr
+                              key={row}
+                              className="hover:bg-teal-50/10 print:hover:bg-transparent"
+                            >
+                              <td className="p-3 text-center border-r border-teal-100 text-zinc-400 print:border-black print:text-black">
                                 {row}
                               </td>
                               {tableHeaders.map((_, cIdx) => (
                                 <td
                                   key={cIdx}
-                                  className="p-3 border-r border-teal-100"
+                                  className="p-3 border-r border-teal-100 print:border-black"
                                 >
-                                  <div className="w-full h-5 border-b border-dashed border-teal-200/60 mt-1"></div>
+                                  <div className="w-full h-5 border-b border-dashed border-teal-200/60 mt-1 print:border-black print:border-solid"></div>
                                 </td>
                               ))}
-                              {isEditing && <td></td>}
+                              {isEditing && <td className="print:hidden"></td>}
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   ) : (
-                    <p className="text-sm italic">{rawContent}</p>
+                    <p className="text-sm italic text-zinc-900 font-medium print:text-black">
+                      {rawContent}
+                    </p>
                   )}
                 </div>
               );
@@ -505,10 +604,10 @@ export default function ModuleDetailPage() {
             {finalItems.map((item, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 bg-white/40 p-2 rounded-lg"
+                className="flex items-start gap-3 bg-white/40 p-2 rounded-lg print:p-0 print:bg-transparent"
               >
                 <span
-                  className={`inline-block w-1.5 h-1.5 rounded-full mt-2.5 shrink-0 bg-current opacity-60 ${iconColor}`}
+                  className={`inline-block w-1.5 h-1.5 rounded-full mt-2.5 shrink-0 bg-current opacity-60 ${iconColor} print:text-black`}
                 />
                 {isEditing ? (
                   <>
@@ -520,13 +619,13 @@ export default function ModuleDetailPage() {
                     />
                     <button
                       onClick={() => handleItemRemove(i)}
-                      className="p-1 hover:bg-red-100 text-red-500 rounded-md transition-colors"
+                      className="p-1 hover:bg-red-100 text-red-500 rounded-md transition-colors print:hidden"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </>
                 ) : (
-                  <span className="text-sm font-medium text-zinc-700 leading-relaxed">
+                  <span className="text-sm font-medium text-zinc-700 leading-relaxed print:text-black">
                     {item}
                   </span>
                 )}
@@ -546,12 +645,10 @@ export default function ModuleDetailPage() {
     );
   };
 
-  // ==========================================
-  // VIEW UTAMA
-  // ==========================================
   return (
-    <div className="max-w-5xl mx-auto pb-12">
-      <div className="mb-8 flex flex-col sm:flex-row items-start justify-between gap-4 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm">
+    <div className="max-w-5xl mx-auto pb-12 print:pb-0">
+      {/* HEADER SECTION PANEL (Sembunyi saat di-print) */}
+      <div className="mb-8 flex flex-col sm:flex-row items-start justify-between gap-4 bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm print:hidden">
         <div className="flex items-start gap-4 w-full sm:max-w-xl">
           <button
             onClick={() => router.back()}
@@ -608,7 +705,8 @@ export default function ModuleDetailPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8">
+      {/* DYNAMIC ACTION TOOLBAR (Sembunyi saat di-print) */}
+      <div className="flex flex-wrap gap-3 mb-8 print:hidden">
         {!isEditing ? (
           <>
             <button
@@ -617,8 +715,17 @@ export default function ModuleDetailPage() {
             >
               <Edit className="w-4 h-4" /> Edit Konten RPP
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold hover:bg-zinc-50">
+            {/* <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold hover:bg-zinc-50"
+            >
               <Download className="w-4 h-4" /> Export PDF
+            </button> */}
+            <button
+              onClick={handleExportWord}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold hover:bg-zinc-50"
+            >
+              <Download className="w-4 h-4" /> Export Word
             </button>
           </>
         ) : (
@@ -643,38 +750,41 @@ export default function ModuleDetailPage() {
         )}
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-8 print:space-y-4">
         {/* I. Identitas */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-          <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-            <FileBadge className="w-6 h-6 text-[#00a870]" /> I. Identitas Umum
-            Modul
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 print:border-none print:shadow-none print:p-0">
+          <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2 print:border-b-2 print:border-black print:pb-2 print:mb-4">
+            <FileBadge className="w-6 h-6 text-[#00a870] print:hidden" /> I.
+            Identitas Umum Modul
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2 print:gap-2">
             {[
               { label: "Satuan Pendidikan", key: "satuan_pendidikan" },
               { label: "Fase Kelas", key: "fase_kelas" },
               { label: "Mata Pelajaran", key: "mata_pelajaran" },
               { label: "Alokasi Waktu", key: "alokasi_waktu" },
             ].map((f) => (
-              <div key={f.key} className="space-y-2">
-                <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+              <div
+                key={f.key}
+                className="space-y-2 print:space-y-0 print:flex print:gap-2"
+              >
+                <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest print:text-black print:w-40">
                   {f.label}
                 </p>
                 {isEditing ? (
                   <input
                     type="text"
-                    value={identitas_modul?.[f.key] || ""}
+                    value={editForm.content_json.identitas_modul?.[f.key] || ""}
                     onChange={(e) => {
                       const u = { ...editForm };
                       u.content_json.identitas_modul[f.key] = e.target.value;
                       setEditForm(u);
                     }}
-                    className="w-full p-2.5 border rounded-xl font-semibold text-zinc-900 bg-zinc-50/50 focus:ring-2 focus:ring-emerald-500 text-sm outline-none"
+                    className="w-full p-2.5 border rounded-xl font-bold text-zinc-900 bg-zinc-50/50 focus:ring-2 focus:ring-emerald-500 text-sm outline-none"
                   />
                 ) : (
-                  <p className="text-lg font-bold text-zinc-900">
-                    {identitas_modul?.[f.key] || "-"}
+                  <p className="text-lg font-bold text-zinc-900 print:text-sm print:font-normal">
+                    : {identitas_modul?.[f.key] || "-"}
                   </p>
                 )}
               </div>
@@ -683,167 +793,161 @@ export default function ModuleDetailPage() {
         </div>
 
         {/* II. Langkah Pembelajaran (Inline Edit) */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-          <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-[#00a870]" /> II. Langkah-Langkah
-            Pembelajaran
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 print:border-none print:shadow-none print:p-0">
+          <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2 print:border-b-2 print:border-black print:pb-2 print:mb-4">
+            <BookOpen className="w-6 h-6 text-[#00a870] print:hidden" /> II.
+            Langkah-Langkah Pembelajaran
           </h2>
-          <div className="space-y-6">
-            {langkah_pembelajaran?.map((langkah: any, idx: number) => (
-              <div
-                key={idx}
-                className="border-l-4 border-l-[#00a870] bg-gradient-to-r from-emerald-50/50 to-transparent p-6 rounded-lg"
-              >
-                <h3 className="text-lg font-bold text-zinc-900 mb-4">
-                  Pertemuan Ke-{langkah.pertemuan_ke}
-                </h3>
-                <div className="space-y-5">
-                  {["kegiatan_awal", "kegiatan_inti", "kegiatan_penutup"].map(
-                    (sect) => (
-                      <div key={sect} className="space-y-2">
-                        <h4 className="text-sm font-bold text-emerald-800 uppercase tracking-wide border-b border-emerald-200/50 pb-1">
-                          {sect.replace("_", " ")}
-                        </h4>
-                        {isEditing ? (
-                          <div className="space-y-2">
-                            {langkah[sect]?.map((item: string, i: number) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className="text-emerald-500 text-lg leading-none">
-                                  •
-                                </span>
-                                <input
-                                  value={item}
-                                  onChange={(e) => {
-                                    const u = { ...editForm };
-                                    u.content_json.langkah_pembelajaran[idx][
-                                      sect
-                                    ][i] = e.target.value;
-                                    setEditForm(u);
-                                  }}
-                                  className="flex-1 bg-white p-2 text-sm text-zinc-900 font-medium rounded border border-emerald-100 focus:outline-none focus:border-emerald-400"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const u = { ...editForm };
-                                    u.content_json.langkah_pembelajaran[idx][
-                                      sect
-                                    ].splice(i, 1);
-                                    setEditForm(u);
-                                  }}
-                                  className="text-red-400 hover:text-red-600"
+          <div className="space-y-6 print:space-y-4">
+            {editForm.content_json.langkah_pembelajaran?.map(
+              (langkah: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="border-l-4 border-l-[#00a870] bg-gradient-to-r from-emerald-50/50 to-transparent p-6 rounded-lg print:border-none print:bg-none print:p-0"
+                >
+                  <h3 className="text-lg font-bold text-zinc-900 mb-4 print:text-black print:text-md">
+                    Pertemuan Ke-{langkah.pertemuan_ke}
+                  </h3>
+                  <div className="space-y-5 print:space-y-3">
+                    {["kegiatan_awal", "kegiatan_inti", "kegiatan_penutup"].map(
+                      (sect) => (
+                        <div key={sect} className="space-y-2">
+                          <h4 className="text-sm font-bold text-emerald-800 uppercase tracking-wide border-b border-emerald-200/50 pb-1 print:text-black print:border-black">
+                            {sect.replace("_", " ")}
+                          </h4>
+                          {isEditing ? (
+                            <div className="space-y-2 print:hidden">
+                              {langkah[sect]?.map((item: string, i: number) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-2"
                                 >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => {
-                                const u = { ...editForm };
-                                u.content_json.langkah_pembelajaran[idx][
-                                  sect
-                                ].push("Langkah baru...");
-                                setEditForm(u);
-                              }}
-                              className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg flex items-center mt-2 hover:bg-emerald-100"
-                            >
-                              <Plus className="w-3 h-3 mr-1" /> Tambah Poin
-                            </button>
-                          </div>
-                        ) : (
-                          <ul className="list-disc list-inside space-y-1 text-sm text-zinc-700 pl-1">
-                            {langkah[sect]?.map((item: any, i: number) => (
-                              <li key={i}>{item}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ),
-                  )}
+                                  <span className="text-emerald-500 text-lg leading-none">
+                                    •
+                                  </span>
+                                  <input
+                                    value={item}
+                                    onChange={(e) => {
+                                      const u = { ...editForm };
+                                      u.content_json.langkah_pembelajaran[idx][
+                                        sect
+                                      ][i] = e.target.value;
+                                      setEditForm(u);
+                                    }}
+                                    className="flex-1 bg-white p-2 text-sm font-medium text-zinc-900 rounded border border-emerald-100 focus:outline-none focus:border-emerald-400"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const u = { ...editForm };
+                                      u.content_json.langkah_pembelajaran[idx][
+                                        sect
+                                      ].splice(i, 1);
+                                      setEditForm(u);
+                                    }}
+                                    className="text-red-400 hover:text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                onClick={() => {
+                                  const u = { ...editForm };
+                                  u.content_json.langkah_pembelajaran[idx][
+                                    sect
+                                  ].push("Langkah baru...");
+                                  setEditForm(u);
+                                }}
+                                className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg flex items-center mt-2 hover:bg-emerald-100"
+                              >
+                                <Plus className="w-3 h-3 mr-1" /> Tambah Poin
+                              </button>
+                            </div>
+                          ) : (
+                            <ul className="list-disc list-inside space-y-1 text-sm text-zinc-700 pl-1 print:text-black">
+                              {langkah[sect]?.map((item: any, i: number) => (
+                                <li key={i}>{item}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
 
         {/* III. Asesmen */}
         {asesmen && (asesmen.formatif || asesmen.rubrik) && (
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-            <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6 text-[#00a870]" />
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 print:border-none print:shadow-none print:p-0 print:break-before-page">
+            <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2 print:border-b-2 print:border-black print:pb-2 print:mb-4">
+              <CheckCircle2 className="w-6 h-6 text-[#00a870] print:hidden" />{" "}
               III. Instrumen & Asesmen
             </h2>
-
-            <div className="space-y-6">
-              {Array.isArray(asesmen.formatif) &&
-                asesmen.formatif.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-700 mb-3 uppercase tracking-wide">
-                      Asesmen Formatif
+            {isEditing ? (
+              <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-500 text-sm text-center italic print:hidden">
+                Bagian rubrik tabel kompleks ini dikunci sementara dalam mode
+                edit ini demi menjaga format tabel.
+              </div>
+            ) : (
+              <div className="space-y-6 print:space-y-4">
+                {Array.isArray(asesmen.formatif) &&
+                  asesmen.formatif.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-700 mb-3 uppercase tracking-wide print:text-black">
+                        Asesmen Formatif
+                      </h3>
+                      <ul className="list-disc list-inside space-y-2 text-sm text-zinc-700 print:text-black">
+                        {asesmen.formatif.map((item, i) => (
+                          <li key={i}>
+                            {typeof item === "string"
+                              ? item
+                              : JSON.stringify(item)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {asesmen.rubrik && Array.isArray(asesmen.rubrik) && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wide print:text-black">
+                      Rubrik Penilaian Kriteria Ketercapaian
                     </h3>
-                    <ul className="list-disc list-inside space-y-2 text-sm text-zinc-700">
-                      {asesmen.formatif.map((item, i) => (
-                        <li key={i}>
-                          {typeof item === "string"
-                            ? item
-                            : JSON.stringify(item)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-              {asesmen.rubrik && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wide">
-                    Rubrik Penilaian Kriteria Ketercapaian
-                  </h3>
-                  {Array.isArray(asesmen.rubrik) ? (
-                    <div className="overflow-x-auto border border-zinc-200 rounded-xl shadow-sm bg-white">
-                      <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                    <div className="overflow-x-auto border border-zinc-200 rounded-xl shadow-sm bg-white print:border-black print:shadow-none">
+                      <table className="w-full text-left border-collapse text-xs sm:text-sm print:text-black">
                         <thead>
-                          <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-700 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="p-4 w-1/4">Aspek / Kriteria</th>
-                            <th className="p-4 w-3/8 text-emerald-700 bg-emerald-50/40">
+                          <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-700 font-bold uppercase tracking-wider text-[10px] print:bg-white print:border-black print:text-black">
+                            <th className="p-4 w-1/4 print:border-r print:border-black">
+                              Aspek / Kriteria
+                            </th>
+                            <th className="p-4 w-3/8 text-emerald-700 bg-emerald-50/40 print:bg-white print:border-r print:border-black print:text-black">
                               Kategori: Mahir
                             </th>
-                            <th className="p-4 w-3/8 text-amber-700 bg-amber-50/40">
+                            <th className="p-4 w-3/8 text-amber-700 bg-amber-50/40 print:bg-white print:text-black">
                               Kategori: Berkembang
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-200">
+                        <tbody className="divide-y divide-zinc-200 print:divide-black">
                           {asesmen.rubrik.map((item, i) => {
-                            let rubrikItem = item;
-                            if (typeof item === "string") {
-                              try {
-                                rubrikItem = JSON.parse(item);
-                              } catch (e) {
-                                return (
-                                  <tr key={i}>
-                                    <td
-                                      colSpan={3}
-                                      className="p-4 text-zinc-500 italic"
-                                    >
-                                      {item}
-                                    </td>
-                                  </tr>
-                                );
-                              }
-                            }
+                            let rubrikItem =
+                              typeof item === "string"
+                                ? JSON.parse(item)
+                                : item;
                             return (
-                              <tr
-                                key={i}
-                                className="hover:bg-zinc-50/30 transition-colors align-top"
-                              >
-                                <td className="p-4 font-bold text-zinc-900 border-r border-zinc-100">
+                              <tr key={i} className="align-top">
+                                <td className="p-4 font-bold text-zinc-900 border-r border-zinc-100 print:border-black print:text-black">
                                   {rubrikItem?.kriteria ||
                                     rubrikItem?.kriteria_penilaian ||
                                     "-"}
                                 </td>
-                                <td className="p-4 text-zinc-600 leading-relaxed bg-emerald-50/10 border-r border-zinc-100">
+                                <td className="p-4 text-zinc-600 leading-relaxed bg-emerald-50/10 border-r border-zinc-100 print:bg-transparent print:border-black print:text-black">
                                   {rubrikItem?.mahir || "-"}
                                 </td>
-                                <td className="p-4 text-zinc-600 leading-relaxed bg-amber-50/10">
+                                <td className="p-4 text-zinc-600 leading-relaxed bg-amber-50/10 print:bg-transparent print:border-black print:text-black">
                                   {rubrikItem?.berkembang || "-"}
                                 </td>
                               </tr>
@@ -852,33 +956,31 @@ export default function ModuleDetailPage() {
                         </tbody>
                       </table>
                     </div>
-                  ) : (
-                    <p className="text-sm text-zinc-700">
-                      {String(asesmen.rubrik)}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
         {/* IV. LKPD (INLINE SMART EDITOR SEAMLESS TABLE) */}
         {lampiran_lkpd && (
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-            <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <AlertIcon className="w-6 h-6 text-[#00a870]" /> IV. Lampiran &
-              Lembar Kerja Peserta Didik (LKPD)
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 print:border-none print:shadow-none print:p-0 print:break-before-page">
+            <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2 print:border-b-2 print:border-black print:pb-2 print:mb-4">
+              <AlertIcon className="w-6 h-6 text-[#00a870] print:hidden" /> IV.
+              Lampiran & Lembar Kerja Peserta Didik (LKPD)
             </h2>
-            <div className="space-y-6">
-              {Array.isArray(lampiran_lkpd) &&
-                lampiran_lkpd.map((section, idx) => (
-                  <div key={idx}>
-                    {typeof section === "string"
-                      ? renderSmartLKPDSection(section, idx)
-                      : null}
-                  </div>
-                ))}
+            <div className="space-y-6 print:space-y-4">
+              {Array.isArray(editForm.content_json.lampiran_lkpd) &&
+                editForm.content_json.lampiran_lkpd.map(
+                  (section: any, idx: number) => (
+                    <div key={idx}>
+                      {typeof section === "string"
+                        ? renderSmartLKPDSection(section, idx)
+                        : null}
+                    </div>
+                  ),
+                )}
             </div>
           </div>
         )}

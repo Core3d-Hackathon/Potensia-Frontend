@@ -1,62 +1,130 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   FileBadge,
   Sparkles,
   ClipboardList,
-  Target,
   ListTodo,
   CheckSquare,
-  HelpCircle,
-  SlidersHorizontal,
-  Paperclip,
   File,
   FileText,
   FolderArchive,
   Pencil,
+  Building,
+  Clock,
+  Layers,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useSaveModule } from "@/app/hooks/useSaveModule";
+
+interface LangkahPembelajaran {
+  pertemuan_ke: number;
+  kegiatan_awal: string[];
+  kegiatan_inti: string[];
+  kegiatan_penutup: string[];
+}
+
+interface ModulAjarData {
+  identitas_modul: {
+    satuan_pendidikan: string;
+    fase_kelas: string;
+    mata_pelajaran: string;
+    alokasi_waktu: string;
+  };
+  langkah_pembelajaran: LangkahPembelajaran[];
+  asesmen: {
+    formatif: string[];
+    rubrik: string[];
+  };
+  lampiran_lkpd: string[];
+}
 
 interface StudioStep4Props {
   shareCommunity: boolean;
   onShareChange: (value: boolean) => void;
+  generatedModul: ModulAjarData | null;
 }
 
-export function StudioStep4({
-  shareCommunity,
-  onShareChange,
-}: StudioStep4Props) {
+export function StudioStep4(props: StudioStep4Props) {
+  const { shareCommunity, onShareChange, generatedModul } = props;
+
+  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+  const { saveModule, isSaving } = useSaveModule();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handleSaveToDatabase = async () => {
+    console.log("[StudioStep4] Tombol Simpan diklik");
+
+    if (!generatedModul) {
+      alert("Data modul kosong. Selesaikan generate di Step 3 dulu.");
+      return;
+    }
+
+    const result = await saveModule(generatedModul, {
+      status: "DRAFT",
+      shareCommunity,
+    });
+
+    if (result.success) {
+      alert(result.message);
+      router.push("/dashboard/archive");
+    } else {
+      alert(result.message);
+    }
+  };
+
+  if (!isMounted) return null;
+
+  if (!generatedModul) {
+    return (
+      <div className="border-2 border-dashed border-zinc-200 rounded-2xl py-20 flex flex-col items-center justify-center text-center p-6 bg-zinc-50/50 flex-1">
+        <Layers className="w-12 h-12 text-zinc-300 mb-3 animate-pulse" />
+        <h3 className="text-base font-bold text-zinc-700">
+          Draf Modul Belum Tersedia
+        </h3>
+        <p className="text-xs text-zinc-400 mt-1 max-w-sm leading-relaxed">
+          Selesaikan generate Alur Pertemuan di Step 3 terlebih dahulu agar AI
+          dapat merakit susunan sintaks pedagogis lengkap.
+        </p>
+      </div>
+    );
+  }
+
+  const { identitas_modul, langkah_pembelajaran, lampiran_lkpd } =
+    generatedModul;
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
-      {/* Header Step 4 */}
+    <div className="space-y-8 flex-1" suppressHydrationWarning>
       <div className="space-y-2 max-w-3xl">
         <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-3">
-          <FileBadge className="w-7 h-7 text-[#00a870]" />
-          Review & Validasi Modul Ajar
+          <FileBadge className="w-7 h-7 text-[#00a870]" /> Review & Validasi
+          Modul Ajar Sempurna
         </h2>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          Studio AI telah menyusun rencana pembelajaran komprehensif berdasarkan
-          kurikulum merdeka. Anda dapat meninjau, mengedit, atau langsung
-          mengunduhnya.
+          Studio AI Potensia telah menyusun rencana pembelajaran komprehensif
+          berbasis kearifan lokal.
         </p>
       </div>
 
-      {/* Grid Layout: Document Preview vs Action Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column: The Document Page */}
+        {/* Kolom Kiri */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 sm:p-10 relative overflow-hidden">
-          {/* Badge */}
-          <div className="absolute top-8 right-8 bg-[#e8faf4] text-[#00a870] text-[0.65rem] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 tracking-wide">
-            <Sparkles className="w-3.5 h-3.5" /> AI GENERATED
+          <div className="absolute top-8 right-8 bg-[#e8faf4] text-[#00a870] text-[0.65rem] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 tracking-wide shadow-sm border border-emerald-100">
+            <Sparkles className="w-3.5 h-3.5" /> AI PERFECTED
           </div>
 
-          {/* Document Title */}
           <div className="mb-10 max-w-[80%]">
             <h1 className="text-xl sm:text-2xl font-black text-zinc-900 mb-2 tracking-tight uppercase">
-              Modul Ajar: Ekosistem Pesisir
+              Rencana Pelaksanaan Pembelajaran (Modul Ajar)
             </h1>
-            <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest">
-              Ilmu Pengetahuan Alam dan Sosial (IPAS)
+            <p className="text-xs font-bold text-[#00a870] uppercase tracking-widest">
+              Terintegrasi Isu & Kearifan Lokal Kontekstual
             </p>
           </div>
 
@@ -64,184 +132,192 @@ export function StudioStep4({
 
           {/* Section 1: Identitas */}
           <div className="mb-10">
-            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" /> Identitas Modul
+            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-zinc-500" /> I. Identitas
+              Umum Modul
             </h3>
-            <div className="grid grid-cols-2 gap-y-6 gap-x-4 bg-zinc-50/50 rounded-xl p-6 border border-zinc-100">
-              <div>
-                <p className="text-[0.65rem] text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                  Nama Sekolah
-                </p>
-                <p className="text-sm font-bold text-zinc-900">
-                  SD Negeri Nusantara 01
-                </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-50/70 rounded-xl p-5 border border-zinc-200/50">
+              <div className="flex items-center gap-3 p-2">
+                <Building className="w-4 h-4 text-zinc-400 shrink-0" />
+                <div>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Satuan Pendidikan
+                  </p>
+                  <p className="text-sm font-bold text-zinc-800">
+                    {identitas_modul?.satuan_pendidikan || "Sekolah Dasar"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[0.65rem] text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                  Fase / Kelas
-                </p>
-                <p className="text-sm font-bold text-zinc-900">
-                  Fase C / Kelas 5
-                </p>
-              </div>
-              <div>
-                <p className="text-[0.65rem] text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                  Alokasi Waktu
-                </p>
-                <p className="text-sm font-bold text-zinc-900">
-                  2 × 35 Menit (1 Pertemuan)
-                </p>
-              </div>
-              <div>
-                <p className="text-[0.65rem] text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                  Tahun Pelajaran
-                </p>
-                <p className="text-sm font-bold text-zinc-900">2023/2024</p>
+              <div className="flex items-center gap-3 p-2">
+                <Clock className="w-4 h-4 text-zinc-400 shrink-0" />
+                <div>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Total Alokasi Waktu
+                  </p>
+                  <p className="text-sm font-bold text-zinc-800">
+                    {identitas_modul?.alokasi_waktu || "-"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Tujuan Pembelajaran */}
+          {/* Section 2: Skenario */}
           <div className="mb-10">
             <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Target className="w-4 h-4" /> Tujuan Pembelajaran
+              <ListTodo className="w-4 h-4 text-zinc-500" /> II. Rincian
+              Skenario Pembelajaran Berantai
             </h3>
-            <div className="space-y-3 text-sm text-zinc-700 leading-relaxed font-medium">
-              <p>
-                • Siswa dapat mengidentifikasi komponen biotik dan abiotik di
-                ekosistem pesisir.
-              </p>
-              <p>
-                • Siswa mampu menjelaskan hubungan saling ketergantungan antar
-                makhluk hidup di wilayah pantai.
-              </p>
-              <p>
-                • Siswa menunjukkan kesadaran dalam menjaga kelestarian
-                lingkungan pesisir dari polusi plastik.
-              </p>
+            <div className="space-y-6">
+              {langkah_pembelajaran?.map((sesi, index) => (
+                <div
+                  key={sesi.pertemuan_ke || index}
+                  className="border border-zinc-200 rounded-xl overflow-hidden shadow-sm"
+                >
+                  <div className="bg-zinc-50 px-4 py-2.5 border-b border-zinc-200 flex justify-between items-center">
+                    <span className="text-xs font-extrabold text-zinc-700 uppercase tracking-wide">
+                      Pertemuan Ke-{sesi.pertemuan_ke}
+                    </span>
+                  </div>
+                  <div className="border-l-4 border-l-[#00a870] bg-white p-5 space-y-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-teal-800 mb-1.5 uppercase tracking-wide">
+                        A. Kegiatan Awal
+                      </h4>
+                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
+                        {sesi.kegiatan_awal?.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-800 mb-1.5 uppercase tracking-wide">
+                        B. Kegiatan Inti
+                      </h4>
+                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
+                        {sesi.kegiatan_inti?.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wide">
+                        C. Kegiatan Penutup
+                      </h4>
+                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
+                        {sesi.kegiatan_penutup?.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Section 3: Langkah Pembelajaran */}
-          <div className="mb-10">
-            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <ListTodo className="w-4 h-4" /> Langkah-Langkah Pembelajaran
-            </h3>
-            <div className="border-l-4 border-[#00a870] bg-[#f8fdfb] pl-6 py-4 pr-4 rounded-r-xl space-y-6">
-              <div>
-                <h4 className="text-sm font-bold text-teal-800 mb-2">
-                  A. Pembukaan (10 Menit)
-                </h4>
-                <p className="text-sm text-zinc-700 leading-relaxed">
-                  Guru menyapa siswa dan memutar video singkat tentang keindahan
-                  laut Indonesia. Dilanjutkan dengan tanya jawab pemantik: "Apa
-                  yang kalian lihat saat berkunjung ke pantai?"
-                </p>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-teal-800 mb-2">
-                  B. Kegiatan Inti (50 Menit)
-                </h4>
-                <p className="text-sm text-zinc-700 leading-relaxed">
-                  Siswa dibagi menjadi kelompok kecil. Setiap kelompok
-                  menganalisis kartu gambar rantai makanan di pesisir. Guru
-                  mendampingi diskusi tentang peran hutan mangrove bagi
-                  ekosistem.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-teal-800 mb-2">
-                  C. Penutup (10 Menit)
-                </h4>
-                <p className="text-sm text-zinc-700 leading-relaxed">
-                  Refleksi bersama tentang pentingnya menjaga terumbu karang.
-                  Doa penutup dan pengumuman tugas observasi mandiri di
-                  lingkungan sekitar.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Asesmen */}
+          {/* Section 3: LKPD */}
           <div>
             <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <CheckSquare className="w-4 h-4" /> Asesmen & Lampiran
+              <CheckSquare className="w-4 h-4 text-zinc-500" /> III. Validasi
+              Instrumen & Lampiran
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button className="border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[#00a870] hover:bg-[#f8fdfb] transition-colors group">
-                <HelpCircle className="w-5 h-5 text-zinc-400 group-hover:text-[#00a870]" />
-                <span className="text-xs font-bold text-zinc-700 group-hover:text-[#00a870]">
-                  Formatif
+            {lampiran_lkpd && lampiran_lkpd.length > 0 && (
+              <div className="bg-purple-50/40 border border-purple-100/70 p-5 rounded-xl space-y-3">
+                <span className="text-xs font-black uppercase text-purple-800 tracking-widest border-b border-purple-200 pb-2 block mb-3">
+                  Lembar Kerja Peserta Didik (LKPD) Lengkap
                 </span>
-              </button>
-              <button className="border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[#00a870] hover:bg-[#f8fdfb] transition-colors group">
-                <SlidersHorizontal className="w-5 h-5 text-zinc-400 group-hover:text-[#00a870]" />
-                <span className="text-xs font-bold text-zinc-700 group-hover:text-[#00a870]">
-                  Rubrik Nilai
-                </span>
-              </button>
-              <button className="border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[#00a870] hover:bg-[#f8fdfb] transition-colors group">
-                <Paperclip className="w-5 h-5 text-zinc-400 group-hover:text-[#00a870]" />
-                <span className="text-xs font-bold text-zinc-700 group-hover:text-[#00a870]">
-                  LKPD
-                </span>
-              </button>
-            </div>
+                <div className="space-y-4">
+                  {lampiran_lkpd.map((section, idx) => (
+                    <p
+                      key={idx}
+                      className="text-xs text-purple-900/90 font-medium leading-relaxed whitespace-pre-line"
+                    >
+                      {section}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column: Actions Sidebar */}
-        <div className="lg:col-span-1 space-y-6 sticky top-6">
-          {/* Download Box */}
+        {/* Kolom Kanan */}
+        <div className="lg:col-span-1 space-y-6 relative z-10">
           <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-zinc-900 mb-4">
               Unduh & Simpan
             </h3>
             <div className="space-y-3">
-              <button className="w-full bg-[#f8fafc] hover:bg-slate-100 text-slate-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-slate-200">
+              <button
+                type="button"
+                className="w-full bg-[#f8fafc] hover:bg-slate-100 text-slate-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-slate-200"
+              >
                 <FileText className="w-5 h-5 text-red-500" /> Export to PDF
               </button>
-              <button className="w-full bg-[#eff6ff] hover:bg-blue-100 text-blue-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-blue-200">
+              <button
+                type="button"
+                className="w-full bg-[#eff6ff] hover:bg-blue-100 text-blue-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-blue-200"
+              >
                 <File className="w-5 h-5 text-blue-600" /> Export to Word
                 (.docx)
               </button>
             </div>
           </div>
 
-          {/* Collaboration Box */}
           <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-zinc-900 mb-4">Kolaborasi</h3>
             <div className="flex items-center justify-between mb-6 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
               <div>
                 <p className="text-sm font-bold text-zinc-800 mb-0.5">
-                  Bagikan ke Ruang Komunitas
+                  Bagikan ke Komunitas
                 </p>
                 <p className="text-[0.65rem] text-[#00a870] font-bold uppercase tracking-wider">
                   Dapatkan 50 XP tambahan!
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => onShareChange(!shareCommunity)}
-                className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none shrink-0 ${
-                  shareCommunity ? "bg-[#00a870]" : "bg-zinc-200"
-                }`}
+                className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none shrink-0 ${shareCommunity ? "bg-[#00a870]" : "bg-zinc-200"}`}
               >
                 <div
-                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${
-                    shareCommunity ? "translate-x-6" : "translate-x-0"
-                  }`}
-                ></div>
+                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${shareCommunity ? "translate-x-6" : "translate-x-0"}`}
+                />
               </button>
             </div>
-            <button className="w-full border-2 border-zinc-200 hover:border-[#00a870] text-zinc-600 hover:text-[#00a870] rounded-xl p-3.5 flex items-center justify-center gap-2 font-bold text-sm transition-colors">
+            <button
+              type="button"
+              className="w-full border-2 border-zinc-200 hover:border-[#00a870] text-zinc-600 hover:text-[#00a870] rounded-xl p-3.5 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
+            >
               <Pencil className="w-4 h-4" /> Edit Manual
             </button>
           </div>
 
-          {/* Final Action */}
-          <button className="w-full bg-[#00a870] hover:bg-[#009260] text-white rounded-2xl p-4 flex items-center justify-center gap-3 font-bold text-base transition-all active:scale-[0.98] shadow-lg shadow-teal-500/30">
-            <FolderArchive className="w-5 h-5" /> Simpan ke Arsip
-          </button>
+          {/* Tombol Simpan */}
+          <div className="relative z-20">
+            <button
+              type="button"
+              onClick={handleSaveToDatabase}
+              disabled={isSaving}
+              className={`w-full text-white rounded-2xl p-4 flex items-center justify-center gap-3 font-bold text-base transition-all shadow-lg ${
+                isSaving
+                  ? "bg-zinc-400 cursor-not-allowed"
+                  : "bg-[#00a870] hover:bg-[#009260] active:scale-[0.98]"
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Menyimpan Ke
+                  Database...
+                </>
+              ) : (
+                <>
+                  <FolderArchive className="w-5 h-5" /> Simpan ke Arsip Modulsss
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { Bell, Diamond, Menu } from "lucide-react";
+import { Bell, Diamond, Menu, User, LogOut } from "lucide-react";
+import Link from "next/link";
 
 export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   return (
@@ -29,9 +30,26 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
             </div>
             <span className="text-[0.65rem] text-zinc-500 uppercase tracking-wider font-medium">Guru Inovator</span>
           </div>
-          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm shrink-0">
-            <div className="w-full h-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
-              OJ
+          <div className="relative group">
+            <button className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm shrink-0 flex focus:outline-none focus:ring-2 focus:ring-teal-500 transition-transform group-hover:scale-105">
+              <div className="w-full h-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
+                OJ
+              </div>
+            </button>
+            
+            {/* Dropdown Menu */}
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-zinc-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-right group-hover:translate-y-0 translate-y-2">
+              <div className="p-1.5 flex flex-col gap-0.5">
+                <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-700 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-colors font-medium">
+                  <User className="w-4 h-4" />
+                  Profile Saya
+                </Link>
+                <div className="h-px bg-zinc-100 my-0.5 mx-2" />
+                <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg transition-colors font-medium">
+                  <LogOut className="w-4 h-4" />
+                  Log out
+                </button>
+              </div>
             </div>
           </div>
         </div>

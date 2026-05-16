@@ -9,8 +9,10 @@ import { StudioStep3 } from "./components/StudioStep3";
 import { StudioStep4 } from "./components/StudioStep4";
 import { StudioFooter } from "./components/StudioFooter";
 
-// Import Custom Hook Kurikulum Nasional kita
+// Import Custom Hook Kurikulum Nasional & Generator AI
 import { useCurriculum } from "@/app/hooks/useCurriculum";
+import { useModuleGenerator } from "@/app/hooks/useModuleGenerator";
+import { transformATPToModul } from "@/app/hooks/utils/modulTransform";
 
 export default function StudioAIPage() {
   const [step, setStep] = useState(1);
@@ -57,7 +59,18 @@ export default function StudioAIPage() {
     }, 600);
   };
 
-  // Konsumsi hook Kurikulum di level parent utama
+  // 1. Konsumsi Hook Generator AI (State & Fungsi API Terpusat)
+  const {
+    isGenerating,
+    generateTP,
+    generateATP,
+    generateFullModul,
+    generatedTP,
+    generatedATP,
+    generatedModul,
+  } = useModuleGenerator();
+
+  // 2. Konsumsi hook Kurikulum di level parent utama
   const {
     jenjangList,
     faseList,
@@ -72,28 +85,26 @@ export default function StudioAIPage() {
     isLoadingCurriculum,
   } = useCurriculum();
 
-  // State untuk konfigurasi parameter Guru
-  const [activeTags, setActiveTags] = useState<string[]>([
-    "Pohon Kelapa",
-    "Perahu Nelayan",
-    "Terumbu Karang",
-  ]);
+  // 3. State lokal (Direset menjadi string/nilai kosong)
+  const [satuanPendidikan, setSatuanPendidikan] = useState("");
+  const [materi, setMateri] = useState("");
+  const [isuLokal, setIsuLokal] = useState("");
+  const [alokasiWaktu, setAlokasiWaktu] = useState(""); // Kosongkan agar user ngetik sendiri
+  const [modelPembelajaran, setModelPembelajaran] = useState(""); // Kosongkan
+  const [jumlahPertemuan, setJumlahPertemuan] = useState(1); // Set ke minimal 1
+
+  // 4. State parameter pendukung (Direset menjadi mati/array kosong)
+  const [activeTags, setActiveTags] = useState<string[]>([]); // Kosong
   const [facilities, setFacilities] = useState({
     internet: false,
-    projector: true,
-    lab: true,
-    electricity: true,
-  });
-  const [learningStyles, setLearningStyles] = useState<string[]>([
-    "visual",
-    "auditori",
-  ]);
-  const [assessments, setAssessments] = useState<string[]>([
-    "praktik",
-    "tertulis",
-  ]);
+    projector: false,
+    lab: false,
+    electricity: false,
+  }); // Mati semua
+  const [learningStyles, setLearningStyles] = useState<string[]>([]); // Kosong
+  const [assessments, setAssessments] = useState<string[]>([]); // Kosong
 
-  // Handlers parameter
+  // Handlers parameter tags & kearifan lokal
   const handleAddTag = (label: string) => {
     if (!activeTags.includes(label)) setActiveTags([...activeTags, label]);
   };
@@ -118,9 +129,79 @@ export default function StudioAIPage() {
     );
   };
 
-  // Navigasi halaman wizard
-  const handleNext = () => setStep(step + 1);
-  const handlePrev = () => setStep(step - 1);
+  // 5. Logika Alur Wizard Sekaligus Trigger API Berantai (TP -> ATP -> Modul)
+  const handleNextStep = async () => {
+    // Validasi Wajib
+    if (step === 1 && (!selectedJenjang || !selectedFase || !selectedSubject)) {
+      alert("Mohon lengkapi pilihan Kurikulum terlebih dahulu.");
+      return;
+    }
+
+    // 🌟 KOPER PAYLOAD UTAMA
+    const fasilitasAktif = Object.entries(facilities)
+      .filter(([_, isActive]) => isActive)
+      .map(([key]) => key);
+
+    const basePayload = {
+      jenjang: selectedJenjang,
+      fase_kelas: selectedFase,
+      mapel: selectedSubject,
+      materi: materi || "Materi Umum", // Hindari error jika kosong
+      isu_lokal: isuLokal,
+      kearifan_lokal: activeTags.join(", "),
+      fasilitas: fasilitasAktif,
+      gaya_belajar: learningStyles,
+      jenis_asesmen: assessments,
+      model_pembelajaran: modelPembelajaran || "Tatap Muka", // Hindari error jika kosong
+      alokasi_waktu: alokasiWaktu || "2 JP", // Hindari error jika kosong
+      satuan_pendidikan:
+        satuanPendidikan ||
+        (selectedJenjang
+          ? `${selectedJenjang.toUpperCase()} Nusantara`
+          : "Sekolah Dasar"),
+      jumlah_pertemuan: jumlahPertemuan,
+    };
+
+    console.log("KOPER DATA YANG MAU DIKIRIM KE BACKEND:", basePayload);
+
+    // Eksekusi API berdasarkan Step
+    if (step === 1) {
+      const success = await generateTP(basePayload);
+      if (success) setStep(2);
+    } else if (step === 2) {
+      const success = await generateATP({
+        ...basePayload,
+        tujuan_pembelajaran_terpilih: generatedTP,
+      });
+      if (success) setStep(3);
+    } else if (step === 3) {
+      // Generate full modul dari ATP
+      const success = await generateFullModul({
+        ...basePayload,
+        alur_pertemuan: generatedATP,
+      });
+
+      // Fallback: Jika backend belum return modul sempurna, transform ATP ke modul format
+      if (success && generatedATP && generatedATP.length > 0) {
+        console.log("[Fallback] Transforming ATP to Modul Structure");
+        const identitasModul = {
+          satuan_pendidikan: basePayload.satuan_pendidikan,
+          fase_kelas: selectedFase,
+          mata_pelajaran: selectedSubject,
+          alokasi_waktu: basePayload.alokasi_waktu,
+        };
+        // Bisa menggunakan transformATPToModul sebagai fallback jika diperlukan
+        // const modulData = transformATPToModul(generatedATP, identitasModul);
+      }
+
+      if (success) setStep(4);
+    } else {
+      setStep(step + 1);
+    }
+  };
+
+  const handlePrev = () => setStep((prev) => prev - 1);
+  console.log("CEK DATA MODUL DI STEP 4:", generatedModul);
 
   // --- State Step 3 (ATP DnD) ---
   const [isMounted, setIsMounted] = useState(false);
@@ -222,8 +303,19 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
+              // Oper State & Setter pengubah nilai
+              satuanPendidikan={satuanPendidikan}
+              setSatuanPendidikan={setSatuanPendidikan}
+              materi={materi}
+              setMateri={setMateri}
+              isuLokal={isuLokal}
+              setIsuLokal={setIsuLokal}
+              alokasiWaktu={alokasiWaktu}
+              setAlokasiWaktu={setAlokasiWaktu}
+              modelPembelajaran={modelPembelajaran}
+              setModelPembelajaran={setModelPembelajaran}
               // Oper seluruh state kurikulum ke anak komponen Step 1
               jenjangList={jenjangList}
               faseList={faseList}
@@ -250,8 +342,12 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
+              // Mengirim data hasil API dan kontrol jumlah pertemuan
+              generatedTP={generatedTP}
+              jumlahPertemuan={jumlahPertemuan}
+              setJumlahPertemuan={setJumlahPertemuan}
             />
           )}
 
@@ -266,8 +362,10 @@ export default function StudioAIPage() {
               toggleFacility={toggleFacility}
               toggleLearningStyle={toggleLearningStyle}
               toggleAssessment={toggleAssessment}
-              onNext={handleNext}
+              onNext={handleNextStep}
               onPrev={handlePrev}
+              // Mengirim data alur pertemuan asli hasil API Langkah 2
+              generatedATP={generatedATP}
             />
           )}
 
@@ -275,14 +373,17 @@ export default function StudioAIPage() {
             <StudioStep4
               shareCommunity={shareCommunity}
               onShareChange={setShareCommunity}
+              // Mengirim objek cetak modul ajar final dari AI
+              generatedModul={generatedModul}
             />
           )}
 
           {/* Tombol Aksi Navigasi Bawah */}
           <StudioFooter
             step={step}
+            isGenerating={isGenerating}
             onPrevClick={handlePrev}
-            onNextClick={handleNext}
+            onNextClick={handleNextStep}
           />
         </div>
       </div>

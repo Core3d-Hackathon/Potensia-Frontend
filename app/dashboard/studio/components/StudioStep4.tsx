@@ -1,43 +1,48 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertCircle,
+  BookOpen,
+  Building,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Eye,
   FileBadge,
-  Sparkles,
-  ClipboardList,
-  ListTodo,
-  CheckSquare,
-  File,
   FileText,
   FolderArchive,
-  Pencil,
-  Building,
-  Clock,
+  Globe,
   Layers,
   Loader2,
+  Lock,
+  MapPinned,
+  Pencil,
+  Sparkles,
 } from "lucide-react";
 import { ModuleSaveMetadata, useSaveModule } from "@/app/hooks/useSaveModule";
 
 interface LangkahPembelajaran {
   pertemuan_ke: number;
-  kegiatan_awal: string[];
-  kegiatan_inti: string[];
-  kegiatan_penutup: string[];
+  kegiatan_awal?: string[];
+  kegiatan_inti?: string[];
+  kegiatan_penutup?: string[];
 }
 
 interface ModulAjarData {
-  identitas_modul: {
-    satuan_pendidikan: string;
-    fase_kelas: string;
-    mata_pelajaran: string;
-    alokasi_waktu: string;
+  identitas_modul?: {
+    satuan_pendidikan?: string;
+    fase_kelas?: string;
+    mata_pelajaran?: string;
+    alokasi_waktu?: string;
   };
-  langkah_pembelajaran: LangkahPembelajaran[];
-  asesmen: {
-    formatif: string[];
-    rubrik: string[];
+  langkah_pembelajaran?: LangkahPembelajaran[];
+  asesmen?: {
+    formatif?: unknown[];
+    rubrik?: unknown[];
   };
-  lampiran_lkpd: string[];
+  lampiran_lkpd?: unknown[];
 }
 
 interface StudioStep4Props {
@@ -53,8 +58,6 @@ export function StudioStep4(props: StudioStep4Props) {
   const { saveModule, isSaving, error } = useSaveModule();
 
   const handleSaveToDatabase = async () => {
-    console.log("[StudioStep4] Tombol Simpan diklik");
-
     try {
       if (!generatedModul) {
         alert("Data modul kosong. Selesaikan generate di Step 3 dulu.");
@@ -63,16 +66,20 @@ export function StudioStep4(props: StudioStep4Props) {
 
       const result = await saveModule(generatedModul, {
         status: "DRAFT",
-        shareCommunity,
         metadata: saveMetadata,
       });
 
       if (result.success) {
         alert(result.message);
+        if (result.data?.id) {
+          router.push(`/dashboard/archive/${result.data.id}`);
+          return;
+        }
         router.push("/dashboard/archive");
-      } else {
-        alert(result.message);
+        return;
       }
+
+      alert(result.message);
     } catch (err) {
       console.error("[StudioStep4] Gagal menyimpan:", err);
       alert("Terjadi kesalahan tak terduga saat menyimpan modul.");
@@ -88,240 +95,486 @@ export function StudioStep4(props: StudioStep4Props) {
         </h3>
         <p className="text-xs text-zinc-400 mt-1 max-w-sm leading-relaxed">
           Selesaikan generate Alur Pertemuan di Step 3 terlebih dahulu agar AI
-          dapat merakit susunan sintaks pedagogis lengkap.
+          dapat merakit susunan modul lengkap.
         </p>
       </div>
     );
   }
 
-  const { identitas_modul, langkah_pembelajaran, lampiran_lkpd } =
-    generatedModul;
+  const identitas = generatedModul.identitas_modul ?? {};
+  const langkahPembelajaran = generatedModul.langkah_pembelajaran ?? [];
+  const asesmen = generatedModul.asesmen;
+  const lampiran = generatedModul.lampiran_lkpd ?? [];
+  const totalAktivitas = langkahPembelajaran.reduce(
+    (count, sesi) =>
+      count +
+      (sesi.kegiatan_awal?.length ?? 0) +
+      (sesi.kegiatan_inti?.length ?? 0) +
+      (sesi.kegiatan_penutup?.length ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-8 flex-1" suppressHydrationWarning>
-      <div className="space-y-2 max-w-3xl">
-        <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-3">
-          <FileBadge className="w-7 h-7 text-[#00a870]" /> Review & Validasi
-          Modul Ajar Sempurna
-        </h2>
-        <p className="text-sm text-zinc-600 leading-relaxed">
-          Studio AI Potensia telah menyusun rencana pembelajaran komprehensif
-          berbasis kearifan lokal.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 sm:p-10 relative overflow-hidden">
-          <div className="absolute top-8 right-8 bg-[#e8faf4] text-[#00a870] text-[0.65rem] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 tracking-wide shadow-sm border border-emerald-100">
-            <Sparkles className="w-3.5 h-3.5" /> AI PERFECTED
+      <div className="flex flex-col gap-5 rounded-[2rem] border border-zinc-200/70 bg-white p-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">
+            <Sparkles className="h-3.5 w-3.5" />
+            Siap Diarsipkan
           </div>
-
-          <div className="mb-10 max-w-[80%]">
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-900 mb-2 tracking-tight uppercase">
-              Rencana Pelaksanaan Pembelajaran (Modul Ajar)
-            </h1>
-            <p className="text-xs font-bold text-[#00a870] uppercase tracking-widest">
-              Terintegrasi Isu & Kearifan Lokal Kontekstual
-            </p>
-          </div>
-
-          <hr className="border-t-2 border-zinc-900 mb-8" />
-
-          <div className="mb-10">
-            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-zinc-500" /> I. Identitas
-              Umum Modul
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-50/70 rounded-xl p-5 border border-zinc-200/50">
-              <div className="flex items-center gap-3 p-2">
-                <Building className="w-4 h-4 text-zinc-400 shrink-0" />
-                <div>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                    Satuan Pendidikan
-                  </p>
-                  <p className="text-sm font-bold text-zinc-800">
-                    {identitas_modul?.satuan_pendidikan || "Sekolah Dasar"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-2">
-                <Clock className="w-4 h-4 text-zinc-400 shrink-0" />
-                <div>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                    Total Alokasi Waktu
-                  </p>
-                  <p className="text-sm font-bold text-zinc-800">
-                    {identitas_modul?.alokasi_waktu || "-"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-10">
-            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <ListTodo className="w-4 h-4 text-zinc-500" /> II. Rincian
-              Skenario Pembelajaran Berantai
-            </h3>
-            <div className="space-y-6">
-              {langkah_pembelajaran?.map((sesi, index) => (
-                <div
-                  key={sesi.pertemuan_ke || index}
-                  className="border border-zinc-200 rounded-xl overflow-hidden shadow-sm"
-                >
-                  <div className="bg-zinc-50 px-4 py-2.5 border-b border-zinc-200 flex justify-between items-center">
-                    <span className="text-xs font-extrabold text-zinc-700 uppercase tracking-wide">
-                      Pertemuan Ke-{sesi.pertemuan_ke}
-                    </span>
-                  </div>
-                  <div className="border-l-4 border-l-[#00a870] bg-white p-5 space-y-4">
-                    <div>
-                      <h4 className="text-xs font-bold text-teal-800 mb-1.5 uppercase tracking-wide">
-                        A. Kegiatan Awal
-                      </h4>
-                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
-                        {sesi.kegiatan_awal?.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-amber-800 mb-1.5 uppercase tracking-wide">
-                        B. Kegiatan Inti
-                      </h4>
-                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
-                        {sesi.kegiatan_inti?.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wide">
-                        C. Kegiatan Penutup
-                      </h4>
-                      <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-1 font-medium">
-                        {sesi.kegiatan_penutup?.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div>
-            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-zinc-500" /> III. Validasi
-              Instrumen & Lampiran
-            </h3>
-            {lampiran_lkpd && lampiran_lkpd.length > 0 && (
-              <div className="bg-purple-50/40 border border-purple-100/70 p-5 rounded-xl space-y-3">
-                <span className="text-xs font-black uppercase text-purple-800 tracking-widest border-b border-purple-200 pb-2 block mb-3">
-                  Lembar Kerja Peserta Didik (LKPD) Lengkap
-                </span>
-                <div className="space-y-4">
-                  {lampiran_lkpd.map((section, idx) => (
-                    <p
-                      key={idx}
-                      className="text-xs text-purple-900/90 font-medium leading-relaxed whitespace-pre-line"
-                    >
-                      {section}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            )}
+            <h2 className="text-2xl font-black text-zinc-900">
+              Preview Arsip Modul
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-600">
+              Step 4 sekarang meniru pola arsip: ada ringkasan dokumen, cuplikan
+              isi, dan setelah disimpan kamu langsung masuk ke halaman detail
+              modul untuk cek seluruh hasil generate.
+            </p>
           </div>
         </div>
 
-        <div className="lg:col-span-1 space-y-6 relative z-10">
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-zinc-900 mb-4">
-              Unduh & Simpan
-            </h3>
-            <div className="space-y-3">
-              <button
-                type="button"
-                className="w-full bg-[#f8fafc] hover:bg-slate-100 text-slate-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-slate-200"
-              >
-                <FileText className="w-5 h-5 text-red-500" /> Export to PDF
-              </button>
-              <button
-                type="button"
-                className="w-full bg-[#eff6ff] hover:bg-blue-100 text-blue-800 rounded-xl p-3.5 flex items-center gap-3 font-bold text-sm transition-colors border border-blue-200"
-              >
-                <File className="w-5 h-5 text-blue-600" /> Export to Word
-                (.docx)
-              </button>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+              Pertemuan
+            </p>
+            <p className="mt-1 text-xl font-black text-zinc-900">
+              {langkahPembelajaran.length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+              Aktivitas
+            </p>
+            <p className="mt-1 text-xl font-black text-zinc-900">
+              {totalAktivitas}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+              Asesmen
+            </p>
+            <p className="mt-1 text-xl font-black text-zinc-900">
+              {(asesmen?.formatif?.length ?? 0) + (asesmen?.rubrik?.length ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+              LKPD
+            </p>
+            <p className="mt-1 text-xl font-black text-zinc-900">
+              {lampiran.length}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.5fr)_390px]">
+        <div className="overflow-hidden rounded-[2rem] border border-zinc-200/70 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-zinc-200/70 bg-[#f4fbf8] px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300 to-emerald-400 shadow-lg shadow-teal-500/20">
+                  <FolderArchive className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
+                    Draft Modul Baru
+                  </p>
+                  <h3 className="text-xl font-black text-zinc-900">
+                    Modul Ajar: {saveMetadata.mapel || identitas.mata_pelajaran || "Pembelajaran"}
+                    {saveMetadata.materi ? ` - ${saveMetadata.materi}` : ""}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pl-14 text-xs font-bold">
+                <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">
+                  {saveMetadata.faseKelas || identitas.fase_kelas || "Umum"}
+                </span>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
+                  {saveMetadata.mapel || identitas.mata_pelajaran || "Mapel"}
+                </span>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                  {saveMetadata.kategoriWilayah || "Umum"}
+                </span>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-100 px-4 py-2 text-sm font-bold text-amber-700">
+              <Lock className="h-4 w-4" />
+              Draft
             </div>
           </div>
 
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-zinc-900 mb-4">Kolaborasi</h3>
-            <div className="flex items-center justify-between mb-6 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-              <div>
-                <p className="text-sm font-bold text-zinc-800 mb-0.5">
-                  Bagikan ke Komunitas
+          <div className="space-y-8 p-6 sm:p-8">
+            <section className="space-y-4">
+              <h4 className="flex items-center gap-2 text-lg font-bold text-zinc-900">
+                <FileBadge className="h-5 w-5 text-[#00a870]" />
+                Identitas Umum
+              </h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InfoCard
+                  icon={<Building className="h-4 w-4 text-zinc-400" />}
+                  label="Satuan Pendidikan"
+                  value={
+                    saveMetadata.asalSekolah ||
+                    identitas.satuan_pendidikan ||
+                    "Sekolah Dasar"
+                  }
+                />
+                <InfoCard
+                  icon={<Clock className="h-4 w-4 text-zinc-400" />}
+                  label="Alokasi Waktu"
+                  value={saveMetadata.alokasiWaktu || identitas.alokasi_waktu || "-"}
+                />
+                <InfoCard
+                  icon={<BookOpen className="h-4 w-4 text-zinc-400" />}
+                  label="Mata Pelajaran"
+                  value={saveMetadata.mapel || identitas.mata_pelajaran || "-"}
+                />
+                <InfoCard
+                  icon={<MapPinned className="h-4 w-4 text-zinc-400" />}
+                  label="Fase / Kelas"
+                  value={saveMetadata.faseKelas || identitas.fase_kelas || "-"}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-bold text-zinc-900">
+                  Cuplikan Langkah Pembelajaran
+                </h4>
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  {langkahPembelajaran.length} pertemuan
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {langkahPembelajaran.slice(0, 3).map((sesi, index) => (
+                  <div
+                    key={sesi.pertemuan_ke || index}
+                    className="rounded-2xl border border-zinc-200 bg-white p-5"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h5 className="text-sm font-black uppercase tracking-wider text-zinc-800">
+                        Pertemuan Ke-{sesi.pertemuan_ke || index + 1}
+                      </h5>
+                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600">
+                        {(sesi.kegiatan_awal?.length ?? 0) +
+                          (sesi.kegiatan_inti?.length ?? 0) +
+                          (sesi.kegiatan_penutup?.length ?? 0)}{" "}
+                        aktivitas
+                      </span>
+                    </div>
+
+                    <div className="-mx-1 overflow-x-auto pb-2">
+                      <div className="flex min-w-max gap-3 px-1">
+                        <PreviewList
+                          title="Awal"
+                          items={sesi.kegiatan_awal}
+                          tone="border-teal-100 bg-teal-50/60 text-teal-900"
+                        />
+                        <PreviewList
+                          title="Inti"
+                          items={sesi.kegiatan_inti}
+                          tone="border-amber-100 bg-amber-50/60 text-amber-900"
+                        />
+                        <PreviewList
+                          title="Penutup"
+                          items={sesi.kegiatan_penutup}
+                          tone="border-slate-200 bg-slate-50 text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {langkahPembelajaran.length > 3 && (
+                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+                  {langkahPembelajaran.length - 3} pertemuan lainnya akan
+                  tersedia penuh di halaman detail arsip setelah modul disimpan.
+                </div>
+              )}
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-zinc-900">
+                  <CheckCircle2 className="h-4 w-4 text-[#00a870]" />
+                  Asesmen
+                </h4>
+                <p className="text-sm text-zinc-600">
+                  {asesmen?.formatif?.length ?? 0} asesmen formatif dan{" "}
+                  {asesmen?.rubrik?.length ?? 0} rubrik telah disiapkan.
                 </p>
-                <p className="text-[0.65rem] text-[#00a870] font-bold uppercase tracking-wider">
-                  Dapatkan 50 XP tambahan!
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-zinc-500">
+                      Formatif
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {(asesmen?.formatif?.length
+                        ? asesmen.formatif.slice(0, 3)
+                        : ["Belum ada asesmen formatif"]).map((item, index) => (
+                        <li
+                          key={`formatif-${index}`}
+                          className="flex gap-2 text-sm leading-relaxed text-zinc-700"
+                        >
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                          <span>{renderUnknownText(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-zinc-500">
+                      Rubrik
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {(asesmen?.rubrik?.length
+                        ? asesmen.rubrik.slice(0, 2)
+                        : ["Belum ada rubrik penilaian"]).map((item, index) => (
+                        <div
+                          key={`rubrik-${index}`}
+                          className="rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700"
+                        >
+                          {formatRubrikItem(item)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-zinc-900">
+                  <FileText className="h-4 w-4 text-[#00a870]" />
+                  Lampiran LKPD
+                </h4>
+                <p className="text-sm text-zinc-600">
+                  {lampiran.length} lampiran siap dicek dan diedit lebih detail
+                  dari halaman arsip modul.
+                </p>
+                <div className="mt-4 space-y-3">
+                  {(lampiran.length ? lampiran.slice(0, 3) : ["Belum ada lampiran LKPD"]).map(
+                    (item, index) => (
+                      <div
+                        key={`lkpd-${index}`}
+                        className="rounded-xl border border-zinc-200 bg-white p-3"
+                      >
+                        <p className="text-[11px] font-black uppercase tracking-wider text-zinc-500">
+                          Lampiran {index + 1}
+                        </p>
+                        <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-zinc-700 whitespace-pre-line">
+                          {renderUnknownText(item)}
+                        </p>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-[2rem] border border-zinc-200/70 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-black text-zinc-900">
+              Aksi Setelah Generate
+            </h3>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="flex items-start gap-3">
+                  <Eye className="mt-0.5 h-5 w-5 text-zinc-500" />
+                  <div>
+                    <p className="text-sm font-bold text-zinc-800">
+                      Cek detail lengkap modul
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                      Setelah disimpan, halaman akan langsung membuka detail
+                      arsip modul yang baru dibuat.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="flex items-start gap-3">
+                  <Pencil className="mt-0.5 h-5 w-5 text-zinc-500" />
+                  <div>
+                    <p className="text-sm font-bold text-zinc-800">
+                      Lanjut edit dari halaman detail
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                      Arsip detail sudah punya mode edit untuk konten RPP, LKPD,
+                      dan proses publish ke komunitas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-zinc-200/70 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-black text-zinc-900">Visibilitas</h3>
+            <div className="mt-4 flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+              <div>
+                <p className="text-sm font-bold text-zinc-800">
+                  Siapkan untuk Komunitas
+                </p>
+                <p className="mt-1 text-[11px] uppercase tracking-wider text-[#00a870] font-bold">
+                  Status awal tetap draft, publish bisa dari detail arsip
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onShareChange(!shareCommunity)}
-                className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none shrink-0 ${
+                className={`relative h-6 w-12 shrink-0 rounded-full transition-colors ${
                   shareCommunity ? "bg-[#00a870]" : "bg-zinc-200"
                 }`}
               >
-                <div
-                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${
+                <span
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
                     shareCommunity ? "translate-x-6" : "translate-x-0"
                   }`}
                 />
               </button>
             </div>
 
-            <button
-              type="button"
-              className="w-full border-2 border-zinc-200 hover:border-[#00a870] text-zinc-600 hover:text-[#00a870] rounded-xl p-3.5 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
-            >
-              <Pencil className="w-4 h-4" /> Edit Manual
-            </button>
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-emerald-900">
+              <div className="flex items-start gap-3">
+                <Globe className="mt-0.5 h-4 w-4" />
+                <p>
+                  Toggle ini sekarang berfungsi sebagai penanda intent berbagi.
+                  Modul tetap masuk sebagai `DRAFT`, lalu bisa direview dulu
+                  sebelum dipublish dari halaman detail arsip.
+                </p>
+              </div>
+            </div>
 
             {error && (
-              <p className="mt-3 text-sm text-red-600 font-medium">{error}</p>
+              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>{error}</p>
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="relative z-20">
-            <button
-              type="button"
-              onClick={handleSaveToDatabase}
-              disabled={isSaving}
-              className={`w-full text-white rounded-2xl p-4 flex items-center justify-center gap-3 font-bold text-base transition-all shadow-lg ${
-                isSaving
-                  ? "bg-zinc-400 cursor-not-allowed"
-                  : "bg-[#00a870] hover:bg-[#009260] active:scale-[0.98]"
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Menyimpan Ke Database...
-                </>
-              ) : (
-                <>
-                  <FolderArchive className="w-5 h-5" />
-                  Simpan ke Arsip Modul
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleSaveToDatabase}
+            disabled={isSaving}
+            className={`flex w-full items-center justify-center gap-3 rounded-[1.6rem] px-5 py-4 text-base font-black text-white shadow-lg transition-all ${
+              isSaving
+                ? "cursor-not-allowed bg-zinc-400"
+                : "bg-[#00a870] hover:bg-[#009260] active:scale-[0.99]"
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Menyimpan Modul...
+              </>
+            ) : (
+              <>
+                <FolderArchive className="h-5 w-5" />
+                Simpan dan Buka Detail Arsip
+                <ChevronRight className="h-5 w-5" />
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
+}
+
+function InfoCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
+      <div className="flex items-center gap-2 text-zinc-500">{icon}</div>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-bold text-zinc-900">{value}</p>
+    </div>
+  );
+}
+
+function PreviewList({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items?: string[];
+  tone: string;
+}) {
+  return (
+    <div className={`min-h-[220px] w-[280px] shrink-0 rounded-2xl border p-4 ${tone}`}>
+      <p className="text-xs font-black uppercase tracking-wider">{title}</p>
+      <ul className="mt-3 space-y-2 text-sm leading-7">
+        {(items && items.length > 0 ? items.slice(0, 3) : ["Belum ada isi"])
+          .map((item, index) => (
+            <li key={`${title}-${index}`} className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
+              <span>{item}</span>
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+
+function formatRubrikItem(item: unknown) {
+  try {
+    const parsed = (
+      typeof item === "string" ? JSON.parse(item) : item
+    ) as {
+      kriteria?: string;
+      kriteria_penilaian?: string;
+      mahir?: string;
+      berkembang?: string;
+    };
+
+    return (
+      <div className="space-y-2">
+        <p className="font-bold text-zinc-900">
+          {parsed.kriteria || parsed.kriteria_penilaian || "Rubrik Penilaian"}
+        </p>
+        <p className="text-xs leading-relaxed text-emerald-700">
+          Mahir: {parsed.mahir || "-"}
+        </p>
+        <p className="text-xs leading-relaxed text-amber-700">
+          Berkembang: {parsed.berkembang || "-"}
+        </p>
+      </div>
+    );
+  } catch {
+    return <p className="leading-relaxed text-zinc-700">{renderUnknownText(item)}</p>;
+  }
+}
+
+function renderUnknownText(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value && typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+  return "-";
 }

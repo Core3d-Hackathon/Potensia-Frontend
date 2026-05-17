@@ -8,13 +8,13 @@ import {
   MapPin,
   Bookmark,
   ThumbsUp,
-  Download,
   Waves,
   Mountain,
   Building2,
   TreePine,
   LayoutGrid,
   Loader,
+  Factory,
 } from "lucide-react";
 import { useCommunity } from "@/app/hooks/useCommunity";
 import Link from "next/link";
@@ -35,8 +35,9 @@ export default function CommunityPage() {
   const quickFilters = [
     { name: "Semua", icon: LayoutGrid },
     { name: "Pegunungan", icon: Mountain },
-    { name: "Pesisir", icon: Waves },
-    { name: "Perkotaan", icon: Building2 },
+    { name: "Pesisir Pantai", icon: Waves },
+    { name: "Perkotaan Padat", icon: Building2 },
+    { name: "Kawasan Industri", icon: Factory },
     { name: "Pedesaan", icon: TreePine },
   ];
 
@@ -61,6 +62,7 @@ export default function CommunityPage() {
     )
       return Waves;
     if (kategori?.toLowerCase().includes("kota")) return Building2;
+    if (kategori?.toLowerCase().includes("industri")) return Factory;
     if (kategori?.toLowerCase().includes("desa")) return TreePine;
     return LayoutGrid;
   };
@@ -90,7 +92,7 @@ export default function CommunityPage() {
             Temukan dan bagikan inspirasi pembelajaran berbasis kearifan lokal.
           </p>
         </div>
-      </div>
+      </div>  
 
       {/* Filter Panel */}
       <div className="bg-white rounded-3xl p-6 border border-zinc-200/60 shadow-sm mb-10 space-y-4">

@@ -6,7 +6,10 @@ import { useAuth } from "@clerk/nextjs";
 interface SaveModuleResponse {
   success: boolean;
   message: string;
-  data?: unknown;
+  data?: {
+    id?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ModuleSaveMetadata {
@@ -27,9 +30,17 @@ interface ModuleData {
     alokasi_waktu?: string;
   };
   langkah_pembelajaran?: Array<{
+    pertemuan_ke?: number;
+    kegiatan_awal?: string[];
+    kegiatan_inti?: string[];
+    kegiatan_penutup?: string[];
     materi_pokok?: string;
   }>;
-  [key: string]: unknown;
+  asesmen?: {
+    formatif?: string[];
+    rubrik?: string[];
+  };
+  lampiran_lkpd?: string[];
 }
 
 interface SaveModuleApiResponse {
@@ -86,6 +97,14 @@ export function useSaveModule() {
             "-",
         },
       };
+      const firstLearningStep = normalizedModuleData?.langkah_pembelajaran?.[0];
+      const derivedMateri =
+        metadata.materi ||
+        firstLearningStep?.materi_pokok ||
+        firstLearningStep?.kegiatan_inti?.[0] ||
+        firstLearningStep?.kegiatan_awal?.[0] ||
+        normalizedModuleData.identitas_modul?.mata_pelajaran ||
+        "Materi Umum";
 
       const payload = {
         judul_modul: `Modul Ajar: ${metadata.mapel || normalizedModuleData.identitas_modul?.mata_pelajaran || "Pembelajaran"}${metadata.materi ? ` - ${metadata.materi}` : ""}`,
@@ -96,10 +115,7 @@ export function useSaveModule() {
           normalizedModuleData.identitas_modul?.mata_pelajaran ||
           "Mata Pelajaran",
         materi:
-          metadata.materi ||
-          normalizedModuleData?.langkah_pembelajaran?.[0]?.materi_pokok ||
-          normalizedModuleData.identitas_modul?.mata_pelajaran ||
-          "Materi Umum",
+          derivedMateri,
         kategori_wilayah: metadata.kategoriWilayah || "Umum",
         content_json: normalizedModuleData,
 
@@ -143,7 +159,10 @@ export function useSaveModule() {
       return {
         success: true,
         message: "✅ Modul berhasil disimpan ke database!",
-        data: json.data,
+        data:
+          json.data && typeof json.data === "object"
+            ? (json.data as SaveModuleResponse["data"])
+            : undefined,
       };
     } catch (err: unknown) {
       const errorMessage =

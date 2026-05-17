@@ -37,10 +37,10 @@ interface ModuleData {
     materi_pokok?: string;
   }>;
   asesmen?: {
-    formatif?: string[];
-    rubrik?: string[];
+    formatif?: unknown[];
+    rubrik?: unknown[];
   };
-  lampiran_lkpd?: string[];
+  lampiran_lkpd?: unknown[];
 }
 
 interface SaveModuleApiResponse {

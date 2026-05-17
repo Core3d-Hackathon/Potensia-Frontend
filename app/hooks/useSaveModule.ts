@@ -6,7 +6,37 @@ import { useAuth } from "@clerk/nextjs";
 interface SaveModuleResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
+}
+
+export interface ModuleSaveMetadata {
+  jenjang?: string;
+  faseKelas?: string;
+  mapel?: string;
+  materi?: string;
+  kategoriWilayah?: string;
+  asalSekolah?: string;
+  alokasiWaktu?: string;
+}
+
+interface ModuleData {
+  identitas_modul?: {
+    satuan_pendidikan?: string;
+    fase_kelas?: string;
+    mata_pelajaran?: string;
+    alokasi_waktu?: string;
+  };
+  langkah_pembelajaran?: Array<{
+    materi_pokok?: string;
+  }>;
+  [key: string]: unknown;
+}
+
+interface SaveModuleApiResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  data?: unknown;
 }
 
 export function useSaveModule() {
@@ -15,10 +45,13 @@ export function useSaveModule() {
   const { getToken } = useAuth();
 
   const saveModule = async (
-    moduleData: any,
-    options: { status?: "DRAFT" | "PUBLISHED"; shareCommunity?: boolean } = {},
+    moduleData: ModuleData,
+    options: {
+      status?: "DRAFT" | "PUBLISHED";
+      metadata?: ModuleSaveMetadata;
+    } = {},
   ): Promise<SaveModuleResponse> => {
-    const { status = "DRAFT", shareCommunity = false } = options;
+    const { status = "DRAFT", metadata = {} } = options;
 
     try {
       setIsSaving(true);
@@ -33,14 +66,42 @@ export function useSaveModule() {
         throw new Error("Token autentikasi tidak ditemukan. Coba login ulang.");
       }
 
+      const normalizedModuleData = {
+        ...moduleData,
+        identitas_modul: {
+          ...moduleData?.identitas_modul,
+          satuan_pendidikan:
+            metadata.asalSekolah ||
+            moduleData?.identitas_modul?.satuan_pendidikan ||
+            "Sekolah Dasar",
+          fase_kelas:
+            metadata.faseKelas || moduleData?.identitas_modul?.fase_kelas || "Umum",
+          mata_pelajaran:
+            metadata.mapel ||
+            moduleData?.identitas_modul?.mata_pelajaran ||
+            "Mata Pelajaran",
+          alokasi_waktu:
+            metadata.alokasiWaktu ||
+            moduleData?.identitas_modul?.alokasi_waktu ||
+            "-",
+        },
+      };
+
       const payload = {
-        judul_modul: `Modul Ajar: ${moduleData?.identitas_modul?.mata_pelajaran || "Pembelajaran"}`,
-        jenjang: moduleData?.identitas_modul?.satuan_pendidikan || "Umum",
-        fase_kelas: moduleData?.identitas_modul?.fase_kelas || "Umum",
-        mapel: moduleData?.identitas_modul?.mata_pelajaran || "Mata Pelajaran",
-        materi: moduleData?.identitas_modul?.mata_pelajaran || "Materi Umum",
-        kategori_wilayah: "Umum",
-        content_json: moduleData,
+        judul_modul: `Modul Ajar: ${metadata.mapel || normalizedModuleData.identitas_modul?.mata_pelajaran || "Pembelajaran"}${metadata.materi ? ` - ${metadata.materi}` : ""}`,
+        jenjang: metadata.jenjang || "Umum",
+        fase_kelas: metadata.faseKelas || normalizedModuleData.identitas_modul?.fase_kelas || "Umum",
+        mapel:
+          metadata.mapel ||
+          normalizedModuleData.identitas_modul?.mata_pelajaran ||
+          "Mata Pelajaran",
+        materi:
+          metadata.materi ||
+          normalizedModuleData?.langkah_pembelajaran?.[0]?.materi_pokok ||
+          normalizedModuleData.identitas_modul?.mata_pelajaran ||
+          "Materi Umum",
+        kategori_wilayah: metadata.kategoriWilayah || "Umum",
+        content_json: normalizedModuleData,
 
         // Status selalu mengikuti parameter dari caller
         // Jangan pernah override jadi PUBLISHED otomatis
@@ -62,7 +123,7 @@ export function useSaveModule() {
 
       console.log("[useSaveModule] Response status:", response.status);
 
-      let json;
+      let json: SaveModuleApiResponse;
       try {
         json = await response.json();
       } catch {
@@ -84,8 +145,9 @@ export function useSaveModule() {
         message: "✅ Modul berhasil disimpan ke database!",
         data: json.data,
       };
-    } catch (err: any) {
-      const errorMessage = err?.message || "Terjadi kesalahan saat menyimpan";
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan";
       setError(errorMessage);
 
       console.error("[useSaveModule] Error:", err);

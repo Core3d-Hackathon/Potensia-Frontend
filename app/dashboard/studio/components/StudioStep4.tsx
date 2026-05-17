@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileBadge,
@@ -17,7 +16,7 @@ import {
   Layers,
   Loader2,
 } from "lucide-react";
-import { useSaveModule } from "@/app/hooks/useSaveModule";
+import { ModuleSaveMetadata, useSaveModule } from "@/app/hooks/useSaveModule";
 
 interface LangkahPembelajaran {
   pertemuan_ke: number;
@@ -45,18 +44,13 @@ interface StudioStep4Props {
   shareCommunity: boolean;
   onShareChange: (value: boolean) => void;
   generatedModul: ModulAjarData | null;
+  saveMetadata: ModuleSaveMetadata;
 }
 
 export function StudioStep4(props: StudioStep4Props) {
-  const { shareCommunity, onShareChange, generatedModul } = props;
-
-  const [isMounted, setIsMounted] = useState(false);
+  const { shareCommunity, onShareChange, generatedModul, saveMetadata } = props;
   const router = useRouter();
   const { saveModule, isSaving, error } = useSaveModule();
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const handleSaveToDatabase = async () => {
     console.log("[StudioStep4] Tombol Simpan diklik");
@@ -70,6 +64,7 @@ export function StudioStep4(props: StudioStep4Props) {
       const result = await saveModule(generatedModul, {
         status: "DRAFT",
         shareCommunity,
+        metadata: saveMetadata,
       });
 
       if (result.success) {
@@ -83,8 +78,6 @@ export function StudioStep4(props: StudioStep4Props) {
       alert("Terjadi kesalahan tak terduga saat menyimpan modul.");
     }
   };
-
-  if (!isMounted) return null;
 
   if (!generatedModul) {
     return (
